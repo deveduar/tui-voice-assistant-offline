@@ -7,9 +7,9 @@ Reconoce comandos de voz y ejecuta acciones en Windows.
 
 - Python 3.8+
 - Windows 10/11 (recomendado Windows Terminal)
-- Micrófono funcional
+- Microfono funcional
 
-## Instalación
+## Instalacion
 
 ```cmd
 pip install -r requirements.txt
@@ -17,65 +17,67 @@ pip install -r requirements.txt
 
 Esto instala:
 - `vosk` — reconocimiento offline de voz
-- `pyaudio` — captura de audio del micrófono
+- `pyaudio` — captura de audio del microfono
 - `textual` — interfaz TUI moderna
 
 ## Uso
 
 ```cmd
-python asistente_voz.py
+python main.py
 ```
 
-### Primera ejecución
+### Primera ejecucion
 
-1. El asistente carga el modelo de voz (∼40 MB).
-2. Si no hay `config.json` o el micrófono guardado no es válido, se abre un menú TUI para seleccionar el micrófono.
-3. La selección se guarda en `config.json` para usos posteriores.
+1. El asistente carga el modelo de voz (~40 MB).
+2. Si no hay `config.json` o el microfono guardado no es valido, se abre un menu TUI para seleccionar el microfono.
+3. La seleccion se guarda en `config.json` para usos posteriores.
 4. Comienza la escucha continua.
 
 ## Interfaz TUI
 
 ```
-┌─────────────────────────────────┐
-│  Asistente de Voz               │  ← Header
-├─────────────────────────────────┤
-│  abrir bloc de notas            │  ← RichLog (historial)
-│  Abriendo el bloc de notas.     │
-│  abrir calculadora              │
-│  Abriendo la calculadora.       │
-├─────────────────────────────────┤
-│  buscando google...             │  ← Static (texto parcial)
-├─────────────────────────────────┤
-│  Microfono [1] activo           │  ← Status bar
-├─────────────────────────────────┤
-│  [Q] Salir  [C] Microfono       │  ← Footer
-└─────────────────────────────────┘
++----------------------------------+
+|  Asistente de Voz                |  <- Header
++----------------------------------+
+|  abrir bloc de notas             |  <- RichLog (historial)
+|  Abriendo el bloc de notas.      |
+|  abrir calculadora               |
+|  Abriendo la calculadora.        |
++----------------------------------+
+|  buscando google...              |  <- Static (texto parcial)
++----------------------------------+
+|  Microfono [1] activo            |  <- Status bar
++----------------------------------+
+|  [Q] Salir  [C] Microfono  [H] Ayuda  |  <- Footer
++----------------------------------+
 ```
 
 ### Atajos de teclado
 
-| Tecla | Acción |
+| Tecla | Accion |
 |-------|--------|
 | `Q` | Salir del asistente |
-| `C` | Abrir menú de selección de micrófono |
+| `C` | Abrir menu de seleccion de microfono |
+| `H` | Abrir pantalla de ayuda con todos los comandos |
 
 ## Comandos de voz
 
-| Comando | Acción |
+| Comando | Accion |
 |---------|--------|
 | "abrir bloc de notas" / "abrir notepad" | Abre el Bloc de Notas |
 | "abrir calculadora" / "abrir calc" | Abre la Calculadora |
-| "abrir navegador" / "abrir internet" | Abre Google Chrome en google.com |
+| "abrir navegador" / "abrir internet" | Abre el navegador en google.com |
 | "buscar en google [consulta]" | Busca en Google |
-| "cambiar micrófono" / "cambiar microfono" | Abre menú para cambiar micrófono |
-| "salir" / "adiós" / "cerrar asistente" | Cierra el asistente |
+| "cambiar microfono" / "cambiar microfono" | Abre menu para cambiar microfono |
+| "ayuda" / "comandos" / "que puedes hacer" | Muestra la pantalla de ayuda |
+| "salir" / "adios" / "cerrar asistente" | Cierra el asistente |
 
-Los comandos de apagado del sistema están comentados en el código por seguridad.
-Para activarlos, descomenta las líneas correspondientes en `ejecutar_comando()`.
+Los comandos de apagado del sistema estan comentados en el codigo por seguridad.
+Para activarlos, descomenta las lineas en `src/commands.py`.
 
-## Configuración
+## Configuracion
 
-El archivo `config.json` se genera automáticamente:
+El archivo `config.json` se genera automaticamente:
 
 ```json
 {
@@ -83,21 +85,32 @@ El archivo `config.json` se genera automáticamente:
 }
 ```
 
-- `mic_index`: índice del dispositivo de entrada (micrófono) a usar.
-- Si el índice guardado no es válido (el micrófono ya no existe), el asistente abre el menú TUI para seleccionar uno nuevo.
+- `mic_index`: indice del dispositivo de entrada (microfono) a usar.
+- Si el indice guardado no es valido (el microfono ya no existe), el asistente abre el menu TUI para seleccionar uno nuevo.
 
 ## Sin Textual (fallback)
 
-Si `textual` no está instalado, el asistente funciona en modo texto simple (selección numérica de micrófono + salida por consola).
+Si `textual` no esta instalado, el asistente funciona en modo texto simple
+(seleccion numerica de microfono + salida por consola).
 
 ## Estructura del proyecto
 
 ```
 audio-vosk/
-├── asistente_voz.py              # Asistente de voz (Textual + fallback texto)
-├── config.json                   # Configuración persistente (se crea solo)
-├── requirements.txt              # Dependencias
-├── README.md                     # Este archivo
-├── vosk-model-small-es-0.42/     # Modelo de voz (no tocar)
-└── .gitignore
++-- main.py                        # Punto de entrada
++-- config.json                    # Configuracion persistente (se crea solo)
++-- requirements.txt               # Dependencias
++-- README.md                      # Este archivo
++-- vosk-model-small-es-0.42/      # Modelo de voz (no tocar)
++-- .gitignore
++-- src/
+    +-- __init__.py
+    +-- config.py                  # Carga/guarda config.json
+    +-- audio.py                   # AudioManager (hilo + cola) + listar microfonos
+    +-- commands.py                # CommandRegistry + definicion de comandos
+    +-- ui/
+        +-- __init__.py
+        +-- app.py                 # VoiceAssistantApp (Textual) + run()
+        +-- screens.py             # MicConfigScreen + HelpScreen
+        +-- fallback.py            # Modo texto sin Textual
 ```
