@@ -62,7 +62,7 @@ si no, cae automaticamente al modo texto.
 |  Escuchando... / Dormido                 |  <- Status bar
 +------------------------------------------+
 |  [Q] Salir  [C] Micro  [H] Ayuda         |
-|  [W] Despertar  [D] Desactivados         |  <- Footer
+|  [W] Despertar                           |  <- Footer
 +------------------------------------------+
 ```
 
@@ -74,7 +74,6 @@ si no, cae automaticamente al modo texto.
 | `C` | Abrir menu de seleccion de microfono |
 | `H` | Abrir pantalla de ayuda con todos los comandos |
 | `W` | Despertar al asistente (si esta dormido) |
-| `D` | Alternar vista de comandos desactivados en ayuda |
 | `M` | Abrir pantalla de configuracion de comandos |
 | `Enter` | (en config de comandos) Activar/desactivar comando |
 
@@ -135,9 +134,8 @@ Requiere [GlazeWM](https://github.com/glazerdesktop/GlazeWM) instalado y `gwm.ex
 
 ### Desactivar comandos
 
-Cada comando tiene un campo `enabled` en `src/commands.py`. Los comandos
-desactivados no se ejecutan pero pueden mostrarse en la ayuda con la etiqueta
-"(desactivado)" segun la configuracion de `show_disabled_commands`.
+Cada comando tiene un campo `enabled`. Los comandos desactivados no
+se ejecutan y se muestran en la ayuda con la etiqueta "(desactivado)".
 
 El estado de los comandos desactivados se guarda en `config.json`
 (disabled_commands) y persiste entre sesiones.
@@ -151,7 +149,6 @@ El archivo `config.json` se genera automaticamente en la raiz del proyecto:
   "mic_index": 1,
   "assistant_name": "flex",
   "require_name": false,
-  "show_disabled_commands": true,
   "disabled_commands": []
 }
 ```
@@ -161,7 +158,6 @@ El archivo `config.json` se genera automaticamente en la raiz del proyecto:
 | `mic_index` | Indice del microfono a usar |
 | `assistant_name` | Nombre del asistente (wake word) |
 | `require_name` | Si es true, todos los comandos requieren el nombre |
-| `show_disabled_commands` | Muestra comandos desactivados en la ayuda |
 | `disabled_commands` | Lista de patrones de comandos desactivados |
 
 Si el microfono guardado no es valido, el asistente abre el menu TUI

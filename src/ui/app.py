@@ -6,7 +6,7 @@ import vosk
 
 from ..config import (
     MODEL_PATH, DEFAULT_MIC_INDEX,
-    DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME, DEFAULT_SHOW_DISABLED,
+    DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME,
     load_config, save_config,
 )
 from ..audio import AudioManager, list_microphones
@@ -70,7 +70,6 @@ if TEXTUAL_AVAILABLE:
             ("c", "cambiar_microfono", "Microfono"),
             ("h", "help", "Ayuda"),
             ("w", "despertar", "Despertar"),
-            ("d", "toggle_disabled_view", "Desactivados"),
             ("m", "config_comandos", "Comandos"),
         ]
 
@@ -194,10 +193,7 @@ if TEXTUAL_AVAILABLE:
                 self.push_screen(MicConfigScreen(mics), self._on_mic_selected)
 
         def action_help(self):
-            show_disabled = self.config.get(
-                "show_disabled_commands", DEFAULT_SHOW_DISABLED
-            )
-            self.push_screen(HelpScreen(show_disabled))
+            self.push_screen(HelpScreen())
 
         def action_dormir(self):
             self.sleeping = True
@@ -217,15 +213,6 @@ if TEXTUAL_AVAILABLE:
         def _on_config_closed(self, _result=None):
             self._save_disabled_state()
             self.query_one("#log", RichLog).write("Configuracion de comandos guardada.")
-
-        def action_toggle_disabled_view(self):
-            current = self.config.get("show_disabled_commands", DEFAULT_SHOW_DISABLED)
-            self.config["show_disabled_commands"] = not current
-            save_config(self.config)
-            state = "activada" if self.config["show_disabled_commands"] else "desactivada"
-            self.query_one("#log", RichLog).write(
-                f"Vista de comandos desactivados: {state}"
-            )
 
         def on_unmount(self):
             self._save_disabled_state()

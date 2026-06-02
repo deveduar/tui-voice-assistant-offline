@@ -39,10 +39,6 @@ class MicConfigScreen(Screen):
 
 
 class HelpScreen(Screen):
-    def __init__(self, show_disabled=True):
-        super().__init__()
-        self.show_disabled = show_disabled
-
     def compose(self):
         yield Header("Ayuda - Comandos del Asistente")
         yield DataTable(id="help-table")
@@ -51,13 +47,11 @@ class HelpScreen(Screen):
 
     def on_mount(self):
         table = self.query_one("#help-table", DataTable)
-        table.add_columns("Comando", "Accion")
+        table.add_columns("Accion", "Comando")
         for cmd in registry.all():
-            if not self.show_disabled and not cmd.enabled:
-                continue
             patterns_str = ", ".join(cmd.patterns)
             label = patterns_str if cmd.enabled else f"{patterns_str} (desactivado)"
-            table.add_row(label, cmd.description)
+            table.add_row(cmd.description, label)
         table.focus()
 
     def on_data_table_row_selected(self, event):
@@ -75,33 +69,31 @@ class CommandConfigScreen(Screen):
     def compose(self):
         yield Header("Configurar Comandos")
         yield Label(
-            "Enter para activar/desactivar un comando. Escape para salir.",
+            "Enter para activar/desactivar. Escape para salir.",
             id="config-label",
         )
-        yield ListView(id="cmd-list")
+        yield DataTable(id="cmd-table")
         yield Button("Cerrar y guardar", variant="primary", id="close-btn")
         yield Footer()
 
     def on_mount(self):
-        self._refresh_list()
+        self._refresh_table()
 
-    def _refresh_list(self):
-        lv = self.query_one("#cmd-list", ListView)
-        lv.clear()
+    def _refresh_table(self):
+        table = self.query_one("#cmd-table", DataTable)
+        table.clear()
+        table.add_columns("", "Comando", "Accion")
         for cmd in registry.all():
-            status = "ACT" if cmd.enabled else "DES"
-            text = f"[{status}] {cmd.patterns[0]} — {cmd.description}"
-            lv.append(ListItem(Label(text)))
-        if registry.all():
-            lv.index = 0
-        lv.focus()
+            icon = "✔" if cmd.enabled else "✘"
+            table.add_row(icon, cmd.patterns[0], cmd.description)
+        table.focus()
 
-    def on_list_view_selected(self, event):
-        lv = event.list_view
-        if lv.index is not None and 0 <= lv.index < len(registry.all()):
-            cmd = registry.all()[lv.index]
+    def on_data_table_row_selected(self, event):
+        cursor = self.query_one("#cmd-table", DataTable).cursor_row
+        if cursor is not None and 0 <= cursor < len(registry.all()):
+            cmd = registry.all()[cursor]
             cmd.enabled = not cmd.enabled
-            self._refresh_list()
+            self._refresh_table()
 
     def on_button_pressed(self, event):
         if event.button.id == "close-btn":

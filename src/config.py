@@ -6,7 +6,6 @@ CONFIG_PATH = "config.json"
 DEFAULT_MIC_INDEX = 1
 DEFAULT_ASSISTANT_NAME = "flex"
 DEFAULT_REQUIRE_NAME = False
-DEFAULT_SHOW_DISABLED = True
 
 
 def load_config():
