@@ -4,6 +4,7 @@ import json
 MODEL_PATH = "vosk-model-small-es-0.42"
 CONFIG_PATH = "config.json"
 DEFAULT_MIC_INDEX = 1
+DEFAULT_MODEL_NAME = "vosk-model-small-es-0.42"
 DEFAULT_ASSISTANT_NAME = "flex"
 DEFAULT_REQUIRE_NAME = False
 DEFAULT_THEME = "textual-dark"
@@ -23,6 +24,18 @@ DEFAULT_LAUNCHERS = {
     "wsl": "wt -p Ubuntu",
     "zed": "zed",
 }
+
+
+def scan_models():
+    try:
+        entries = os.listdir(".")
+        models = sorted(
+            d for d in entries
+            if d.startswith("vosk-model-") and os.path.isdir(d)
+        )
+        return models if models else [DEFAULT_MODEL_NAME]
+    except OSError:
+        return [DEFAULT_MODEL_NAME]
 
 
 def load_config():
@@ -45,6 +58,7 @@ def get_config():
     changed = False
     defaults = {
         "mic_index": DEFAULT_MIC_INDEX,
+        "model_name": DEFAULT_MODEL_NAME,
         "assistant_name": DEFAULT_ASSISTANT_NAME,
         "require_name": DEFAULT_REQUIRE_NAME,
         "disabled_commands": [],

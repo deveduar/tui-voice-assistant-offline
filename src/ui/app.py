@@ -1,13 +1,14 @@
 import os
 import sys
 import queue
+from functools import partial
 
 import vosk
 
 from ..config import (
     MODEL_PATH, DEFAULT_MIC_INDEX,
     DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME,
-    get_config, save_config,
+    get_config, save_config, scan_models,
 )
 from ..audio import AudioManager, list_microphones
 from ..commands import ejecutar_comando, registry
@@ -17,18 +18,24 @@ try:
     from textual.app import App, ComposeResult
     from textual.widgets import Header, Footer, RichLog, Static
     from textual.containers import Container
-    from .screens import MicConfigScreen, HelpScreen, CommandConfigScreen
+    try:
+        from textual.command import Provider, Hit
+    except ImportError:
+        Provider = None
+    from .screens import CommandConfigScreen
     TEXTUAL_AVAILABLE = True
 except ImportError:
     TEXTUAL_AVAILABLE = False
 
-_WRITE_ENTER_PATTERNS = ["modo escritura", "modo dictado", "empezar a escribir"]
-_WRITE_EXIT_PATTERNS = ["modo comandos", "modo normal", "salir de escritura", "dejar de escribir"]
-
 
 def run():
-    if not os.path.exists(MODEL_PATH):
-        print(f"ERROR: No se encuentra la carpeta del modelo en '{MODEL_PATH}'")
+    models = scan_models()
+    model_name = get_config().get("model_name", MODEL_PATH)
+    if model_name not in models:
+        model_name = models[0] if models else MODEL_PATH
+    if not os.path.exists(model_name):
+        print(f"ERROR: No se encuentra la carpeta del modelo en '{model_name}'")
+        print("Modelos disponibles:", ", ".join(models))
         sys.exit(1)
 
     if not TEXTUAL_AVAILABLE:
@@ -43,6 +50,53 @@ def run():
 
 
 if TEXTUAL_AVAILABLE:
+
+    class VoiceAssistantCommands(Provider):
+        async def search(self, query: str):
+            app = self.app
+            q = query.lower()
+
+            if not q or "micro" in q or "mic" in q:
+                mics = list_microphones()
+                for idx, name in mics:
+                    yield Hit(
+                        10,
+                        f"[{idx}] {name}",
+                        "Seleccionar este microfono",
+                        partial(app.action_palette_mic, idx),
+                    )
+
+            if not q or "modelo" in q or "model" in q:
+                models = scan_models()
+                for mname in models:
+                    yield Hit(
+                        20,
+                        mname,
+                        "Usar este modelo de voz",
+                        partial(app.action_palette_model, mname),
+                    )
+
+            if not q or "dormir" in q or "suspen" in q or "reposo" in q:
+                yield Hit(30, "Dormir asistente", "Poner en reposo", app.action_dormir)
+
+            if not q or "despertar" in q or "activar" in q:
+                yield Hit(31, "Despertar asistente", "Activar del reposo", app.action_despertar)
+
+            if not q or "escritura" in q or "dictado" in q:
+                yield Hit(
+                    40, "Modo escritura", "Activar dictado",
+                    partial(app._toggle_writing_from_palette, True),
+                )
+
+            if not q or "comandos" in q or "normal" in q:
+                yield Hit(
+                    41, "Modo comandos", "Desactivar dictado",
+                    partial(app._toggle_writing_from_palette, False),
+                )
+
+            if not q or "config" in q or "comandos" in q:
+                yield Hit(50, "Configurar comandos", "Abrir configuracion de comandos", app.action_config_comandos)
+
 
     class VoiceAssistantApp(App):
         CSS = """
@@ -69,13 +123,11 @@ if TEXTUAL_AVAILABLE:
         }
         """
 
+        COMMANDS = {VoiceAssistantCommands} if Provider else {}
+
         BINDINGS = [
             ("q", "salir", "Salir"),
-            ("c", "cambiar_microfono", "Microfono"),
-            ("h", "help", "Ayuda"),
-            ("w", "despertar", "Despertar"),
-            ("m", "config_comandos", "Comandos"),
-            ("t", "toggle_escritura", "Escribir"),
+            ("m", "config_comandos", "Menu Comandos"),
         ]
 
         def __init__(self):
@@ -90,9 +142,10 @@ if TEXTUAL_AVAILABLE:
             cfg_name = self.config.get("assistant_name", DEFAULT_ASSISTANT_NAME)
             self.assistant_name = cfg_name.strip().lower()
             self.require_name = self.config.get("require_name", DEFAULT_REQUIRE_NAME)
+            self._model_name = self.config.get("model_name", MODEL_PATH)
 
             print("Cargando modelo de voz... (esto puede tardar unos segundos)")
-            self.model = vosk.Model(MODEL_PATH)
+            self.model = vosk.Model(self._model_name)
 
         def watch_theme(self, theme_name: str):
             self.config["theme"] = theme_name
@@ -121,9 +174,9 @@ if TEXTUAL_AVAILABLE:
 
             if mic_index not in valid_indices:
                 self.query_one("#log", RichLog).write(
-                    "Microfono guardado no valido. Selecciona uno:"
+                    "Microfono guardado no valido. Usa Ctrl+P para seleccionar uno:"
                 )
-                self.push_screen(MicConfigScreen(mics), self._on_mic_selected)
+                self.action_palette_mic_open()
             else:
                 self._start_audio(mic_index)
 
@@ -146,6 +199,8 @@ if TEXTUAL_AVAILABLE:
             save_config(self.config)
 
         def _start_audio(self, mic_index):
+            if self.audio_manager:
+                self.audio_manager.stop()
             self.audio_manager = AudioManager(
                 mic_index, self.model, self.audio_queue
             )
@@ -154,21 +209,17 @@ if TEXTUAL_AVAILABLE:
                 f"Microfono [{mic_index}] activo"
             )
 
-        def _on_mic_selected(self, mic_index):
-            save_config({"mic_index": mic_index})
-            self.query_one("#log", RichLog).write(
-                f"Microfono [{mic_index}] seleccionado."
-            )
-            self._start_audio(mic_index)
-
         def _update_status(self):
-            status = self.query_one("#status-bar", Static)
-            if self.sleeping:
-                status.update("Dormido")
-            elif self.writing_mode:
-                status.update("Escribiendo...")
-            else:
-                status.update("Escuchando...")
+            try:
+                status = self.query_one("#status-bar", Static)
+                if self.sleeping:
+                    status.update("Dormido")
+                elif self.writing_mode:
+                    status.update("Escribiendo...")
+                else:
+                    status.update("Escuchando...")
+            except Exception:
+                pass
 
         def _check_queue(self):
             log = self.query_one("#log", RichLog)
@@ -181,32 +232,35 @@ if TEXTUAL_AVAILABLE:
                 elif msg["type"] == "result":
                     texto = msg["text"]
                     texto_lower = texto.lower().strip()
-                    handled = False
 
-                    if self.writing_mode:
-                        if any(p in texto_lower for p in _WRITE_EXIT_PATTERNS):
-                            self.writing_mode = False
-                            self._update_status()
-                            log.write(texto)
-                            log.write("Modo escritura desactivado. Modo comandos.")
-                            handled = True
-                        else:
-                            write_text(texto)
-                            log.write(f"[Escritura] {texto}")
-                            handled = True
-                    else:
-                        if any(p in texto_lower for p in _WRITE_ENTER_PATTERNS):
-                            self.writing_mode = True
-                            self._update_status()
-                            log.write(texto)
-                            log.write("Modo escritura activado. Todo lo que digas se escribira en la ventana activa.")
-                            handled = True
-
-                    if not handled:
+                    if self.sleeping:
                         respuesta = ejecutar_comando(texto, self)
                         if respuesta:
                             log.write(texto)
                             log.write(respuesta)
+                    elif self.writing_mode:
+                        match = registry.match(texto_lower)
+                        if match and match[0].category == "sistema" and \
+                           any(p in match[0].patterns[0] for p in
+                               ["modo comandos", "modo normal", "salir de escritura"]):
+                            match[0].action(self, "")
+                            log.write(texto)
+                            log.write("Modo escritura desactivado.")
+                        else:
+                            write_text(texto)
+                            log.write(f"[Escritura] {texto}")
+                    else:
+                        match = registry.match(texto_lower)
+                        if match and match[0].category == "sistema" and \
+                           any(p in match[0].patterns[0] for p in ["modo escritura", "modo dictado"]):
+                            match[0].action(self, "")
+                            log.write(texto)
+                            log.write("Modo escritura activado.")
+                        else:
+                            respuesta = ejecutar_comando(texto, self)
+                            if respuesta:
+                                log.write(texto)
+                                log.write(respuesta)
 
                     partial_widget.update("")
                 elif msg["type"] == "status":
@@ -224,17 +278,6 @@ if TEXTUAL_AVAILABLE:
                 self.audio_manager.stop()
             self.exit()
 
-        def action_cambiar_microfono(self):
-            if self.audio_manager:
-                self.audio_manager.stop()
-                self.audio_manager = None
-            mics = list_microphones()
-            if mics:
-                self.push_screen(MicConfigScreen(mics), self._on_mic_selected)
-
-        def action_help(self):
-            self.push_screen(HelpScreen())
-
         def action_dormir(self):
             self.sleeping = True
             self._update_status()
@@ -247,21 +290,88 @@ if TEXTUAL_AVAILABLE:
             self._update_status()
             self.query_one("#partial-text", Static).update("")
 
-        def action_toggle_escritura(self):
-            self.writing_mode = not self.writing_mode
-            self._update_status()
-            log = self.query_one("#log", RichLog)
-            if self.writing_mode:
-                log.write("Modo escritura activado por teclado.")
-            else:
-                log.write("Modo escritura desactivado.")
-
         def action_config_comandos(self):
             self.push_screen(CommandConfigScreen(), self._on_config_closed)
 
-        def _on_config_closed(self, _result=None):
-            self._save_disabled_state()
-            self.query_one("#log", RichLog).write("Configuracion de comandos guardada.")
+        def _on_config_closed(self, dirty: bool = False):
+            if dirty:
+                self._save_disabled_state()
+                self.query_one("#log", RichLog).write("Configuracion de comandos guardada.")
+
+        def action_palette_mic(self, mic_index: int):
+            current = self.config.get("mic_index")
+            if mic_index == current:
+                return
+            if self.audio_manager:
+                self.audio_manager.stop()
+                self.audio_manager = None
+            self.config["mic_index"] = mic_index
+            save_config(self.config)
+            self._start_audio(mic_index)
+            self.query_one("#log", RichLog).write(
+                f"Microfono cambiado a [{mic_index}]."
+            )
+
+        def action_palette_mic_open(self):
+            mics = list_microphones()
+            if mics:
+                from textual.screen import Screen
+                from textual.widgets import Header, Footer, ListView, ListItem, Label, Button
+                class MicPicker(Screen):
+                    def __init__(self, mics):
+                        super().__init__()
+                        self.mics = mics
+                    def compose(self):
+                        yield Header("Seleccionar Microfono")
+                        yield Label("Elige un microfono:")
+                        yield ListView(id="mic-list")
+                        yield Button("Confirmar", variant="primary", id="confirm-btn")
+                        yield Footer()
+                    def on_mount(self):
+                        lv = self.query_one("#mic-list", ListView)
+                        for idx, name in self.mics:
+                            lv.append(ListItem(Label(f"  [{idx}] {name}")))
+                        if self.mics:
+                            lv.index = 0
+                    def on_list_view_selected(self, event):
+                        idx = event.list_view.index
+                        if idx is not None and 0 <= idx < len(self.mics):
+                            self.dismiss(self.mics[idx][0])
+                    def on_button_pressed(self, event):
+                        if event.button.id == "confirm-btn":
+                            lv = self.query_one("#mic-list", ListView)
+                            if lv.index is not None and 0 <= lv.index < len(self.mics):
+                                self.dismiss(self.mics[lv.index][0])
+                self.push_screen(MicPicker(mics), self._on_mic_picked)
+
+        def _on_mic_picked(self, mic_index):
+            if mic_index is not None:
+                self.action_palette_mic(mic_index)
+
+        def action_palette_model(self, model_name: str):
+            current = self.config.get("model_name")
+            if model_name == current:
+                return
+            if self.audio_manager:
+                self.audio_manager.stop()
+                self.audio_manager = None
+            self.config["model_name"] = model_name
+            save_config(self.config)
+            self._model_name = model_name
+            print(f"Cargando modelo: {model_name}")
+            self.model = vosk.Model(model_name)
+            mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
+            self._start_audio(mic_index)
+            self.query_one("#log", RichLog).write(f"Modelo cambiado a {model_name}.")
+
+        def _toggle_writing_from_palette(self, on: bool):
+            self.writing_mode = on
+            self._update_status()
+            log = self.query_one("#log", RichLog)
+            if on:
+                log.write("Modo escritura activado desde paleta.")
+            else:
+                log.write("Modo escritura desactivado.")
 
         def on_unmount(self):
             self._save_disabled_state()

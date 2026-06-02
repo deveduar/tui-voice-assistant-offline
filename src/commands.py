@@ -14,6 +14,7 @@ class Command:
     action: Callable[..., str]
     needs_query: bool = False
     enabled: bool = True
+    category: str = "general"
 
 
 class CommandRegistry:
@@ -78,18 +79,13 @@ def _buscar_google(app, q):
 
 def _cambiar_microfono(app, q):
     if app:
-        app.action_cambiar_microfono()
+        app.action_palette_mic_open()
     return "Abriendo seleccion de microfono."
 
 def _salir(app, q):
     if app:
         app.action_salir()
     return "Cerrando asistente..."
-
-def _ayuda(app, q):
-    if app:
-        app.action_help()
-    return "Abriendo ayuda..."
 
 def _configurar_comandos(app, q):
     if app:
@@ -195,6 +191,28 @@ def _abrir_programa(app, q):
     except Exception:
         return f"No se encontro el programa '{q}'."
 
+def _duerme(app, q):
+    if app:
+        app.action_dormir()
+    return "Asistente en reposo."
+
+def _despierta(app, q):
+    if app:
+        app.action_despertar()
+    return "Asistente activo."
+
+def _modo_escritura(app, q):
+    if app:
+        app.writing_mode = True
+        app._update_status()
+    return "Modo escritura activado."
+
+def _modo_comandos(app, q):
+    if app:
+        app.writing_mode = False
+        app._update_status()
+    return "Modo escritura desactivado."
+
 def _focus_workspace(n):
     def action(app, q):
         if gwm("focus", "--workspace", str(n)):
@@ -209,46 +227,38 @@ def _move_to_workspace(n):
         return f"Ventana movida al escritorio {n}."
     return action
 
-# Shutdown commands (commented out for safety)
-# def _apagar(app, q):
-#     subprocess.run(["shutdown", "/s", "/t", "5"])
-#     return "El sistema se apagara en 5 segundos."
-# def _cancelar_apagado(app, q):
-#     subprocess.run(["shutdown", "/a"])
-#     return "Apagado cancelado."
-
-
-# --- Sleep/wake patterns ---
-
-_SLEEP_PATTERNS = ["duerme", "dormir", "reposo"]
-_WAKE_PATTERNS = ["despierta", "despertar", "activo"]
-
 
 # --- Command registry ---
 
 registry = CommandRegistry()
 
+# --- General ---
+
 registry.add(Command(
     patterns=["abrir bloc de notas", "abrir notepad"],
     description="Abre el Bloc de Notas de Windows",
+    category="general",
     action=_abrir_notepad,
 ))
 
 registry.add(Command(
     patterns=["abrir calculadora", "abrir calc"],
     description="Abre la Calculadora de Windows",
+    category="general",
     action=_abrir_calc,
 ))
 
 registry.add(Command(
     patterns=["abrir navegador", "abrir internet"],
     description="Abre el navegador en Google",
+    category="general",
     action=_abrir_navegador,
 ))
 
 registry.add(Command(
     patterns=["buscar en google"],
     description="Busca un termino en Google",
+    category="general",
     needs_query=True,
     action=_buscar_google,
 ))
@@ -256,114 +266,124 @@ registry.add(Command(
 registry.add(Command(
     patterns=["cambiar microfono", "cambiar micrófono"],
     description="Cambia el microfono activo",
+    category="general",
     action=_cambiar_microfono,
 ))
 
 registry.add(Command(
     patterns=["salir", "adios", "adiós", "cerrar asistente"],
     description="Cierra el asistente de voz",
+    category="general",
     action=_salir,
-))
-
-registry.add(Command(
-    patterns=["ayuda", "comandos", "que puedes hacer"],
-    description="Muestra la pantalla de ayuda con todos los comandos",
-    action=_ayuda,
 ))
 
 registry.add(Command(
     patterns=["configurar comandos", "gestionar comandos", "personalizar comandos"],
     description="Abre la pantalla para activar/desactivar comandos",
+    category="general",
     action=_configurar_comandos,
 ))
 
-# --- GlazeWM commands ---
+# --- GlazeWM ---
 
 registry.add(Command(
     patterns=["abrir terminal", "abrir cmd"],
     description="Abre la terminal de Windows",
+    category="glazewm",
     action=_abrir_terminal,
 ))
 
 registry.add(Command(
     patterns=["cerrar ventana"],
     description="Cierra la ventana activa en GlazeWM",
+    category="glazewm",
     action=_cerrar_ventana,
 ))
 
 registry.add(Command(
     patterns=["siguiente escritorio", "siguiente"],
     description="Va al siguiente escritorio virtual",
+    category="glazewm",
     action=_siguiente_escritorio,
 ))
 
 registry.add(Command(
     patterns=["anterior escritorio", "anterior"],
     description="Va al anterior escritorio virtual",
+    category="glazewm",
     action=_anterior_escritorio,
 ))
 
 registry.add(Command(
     patterns=["ultimo escritorio", "volver", "escritorio anterior"],
     description="Vuelve al ultimo escritorio activo",
+    category="glazewm",
     action=_ultimo_escritorio,
 ))
 
 registry.add(Command(
     patterns=["maximizar ventana", "maximizar"],
     description="Pone la ventana activa en pantalla completa",
+    category="glazewm",
     action=_maximizar_ventana,
 ))
 
 registry.add(Command(
     patterns=["minimizar ventana", "minimizar"],
     description="Minimiza la ventana activa",
+    category="glazewm",
     action=_minimizar_ventana,
 ))
 
 registry.add(Command(
     patterns=["hacer flotante", "flotar ventana"],
     description="Cambia la ventana activa a modo flotante",
+    category="glazewm",
     action=_hacer_flotante,
 ))
 
 registry.add(Command(
     patterns=["hacer fija", "fijar ventana", "hacer tiling"],
     description="Cambia la ventana activa a modo fijo (tiling)",
+    category="glazewm",
     action=_hacer_fija,
 ))
 
 registry.add(Command(
     patterns=["recargar config", "recargar configuracion"],
     description="Recarga la configuracion de GlazeWM",
+    category="glazewm",
     action=_recargar_config,
 ))
 
 registry.add(Command(
     patterns=["ciclar foco", "siguiente ventana", "ciclar ventana"],
     description="Cambia el foco entre ventanas flotantes y ancladas",
+    category="glazewm",
     action=_ciclar_foco,
 ))
 
 registry.add(Command(
     patterns=["cambiar direccion", "cambiar direccion tiling"],
     description="Cambia la direccion de insercion de nuevas ventanas",
+    category="glazewm",
     action=_cambiar_direccion_tiling,
 ))
 
 registry.add(Command(
     patterns=["redibujar", "refrescar ventanas"],
     description="Redibuja todas las ventanas en GlazeWM",
+    category="glazewm",
     action=_redibujar,
 ))
 
 registry.add(Command(
     patterns=["pausar glaze", "pausar ventanas", "reanudar glaze"],
     description="Pausa o reanuda la gestion de ventanas de GlazeWM",
+    category="glazewm",
     action=_pausar_glaze,
 ))
 
-# Focus / move direction
 _DIR_NAMES = {
     "left": ("izquierda", "izquierdo"),
     "right": ("derecha", "derecho"),
@@ -374,6 +394,7 @@ for direction, (es_name, _) in _DIR_NAMES.items():
     registry.add(Command(
         patterns=[f"enfocar {es_name}", f"enfoque {es_name}"],
         description=f"Enfoca la ventana a la {es_name}",
+        category="glazewm",
         action=_focus_direction(direction),
     ))
 
@@ -381,10 +402,10 @@ for direction, (es_name, _) in _DIR_NAMES.items():
     registry.add(Command(
         patterns=[f"mover {es_name}", f"desplazar {es_name}"],
         description=f"Mueve la ventana activa a la {es_name}",
+        category="glazewm",
         action=_move_direction(direction),
     ))
 
-# Workspace focus / move by number
 _NUM_WORDS = ["", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"]
 
 for i in range(1, 10):
@@ -396,6 +417,7 @@ for i in range(1, 10):
             f"escritorio {_NUM_WORDS[i]}",
         ],
         description=f"Ir al escritorio virtual {i}",
+        category="glazewm",
         action=_focus_workspace(i),
     ))
 
@@ -408,30 +430,48 @@ for i in range(1, 10):
             f"mover al escritorio {_NUM_WORDS[i]}",
         ],
         description=f"Mueve la ventana activa al escritorio virtual {i}",
+        category="glazewm",
         action=_move_to_workspace(i),
     ))
+
+# --- Sistema ---
+
+registry.add(Command(
+    patterns=["duerme", "dormir", "reposo"],
+    description="Pone el asistente en reposo (requiere nombre)",
+    category="sistema",
+    action=_duerme,
+))
+
+registry.add(Command(
+    patterns=["despierta", "despertar", "activo"],
+    description="Activa el asistente del reposo (requiere nombre)",
+    category="sistema",
+    action=_despierta,
+))
+
+registry.add(Command(
+    patterns=["modo escritura", "modo dictado", "empezar a escribir"],
+    description="Activa el modo dictado (escribe lo que digas)",
+    category="sistema",
+    action=_modo_escritura,
+))
+
+registry.add(Command(
+    patterns=["modo comandos", "modo normal", "salir de escritura", "dejar de escribir"],
+    description="Desactiva el modo dictado",
+    category="sistema",
+    action=_modo_comandos,
+))
 
 # Custom launcher (must be last to let specific "abrir" commands match first)
 registry.add(Command(
     patterns=["abrir"],
     description="Abre un programa configurado (codigo, lapce, notepad plus, explorador, ...)",
     needs_query=True,
+    category="general",
     action=_abrir_programa,
 ))
-
-# Shutdown commands (commented)
-# registry.add(Command(
-#     patterns=["apagar pc", "apagar el ordenador"],
-#     description="Apaga el equipo en 5 segundos",
-#     action=_apagar,
-#     enabled=False,
-# ))
-# registry.add(Command(
-#     patterns=["cancelar apagado"],
-#     description="Cancela el apagado programado",
-#     action=_cancelar_apagado,
-#     enabled=False,
-# ))
 
 
 def ejecutar_comando(text: str, app=None) -> str:
@@ -439,7 +479,6 @@ def ejecutar_comando(text: str, app=None) -> str:
     if not text:
         return ""
 
-    # Read app state
     assistant_name = ""
     require_name = False
     sleeping = False
@@ -448,7 +487,6 @@ def ejecutar_comando(text: str, app=None) -> str:
         require_name = getattr(app, "require_name", False)
         sleeping = getattr(app, "sleeping", False)
 
-    # Strip wake word prefix if present
     has_prefix = False
     if assistant_name:
         if text == assistant_name:
@@ -457,23 +495,25 @@ def ejecutar_comando(text: str, app=None) -> str:
             text = text[len(assistant_name) + 1:].strip()
             has_prefix = True
 
-    # Sleep/wake always require prefix
-    is_sleep = any(p in text for p in _SLEEP_PATTERNS)
-    is_wake = any(p in text for p in _WAKE_PATTERNS)
-
-    if is_sleep or is_wake:
-        if not has_prefix:
-            if is_sleep and not sleeping:
-                return f"Usa '{assistant_name} duerme' para dormir."
+    match = registry.match(text)
+    if not match:
+        if sleeping:
             return ""
-        if is_sleep:
-            if app and hasattr(app, "action_dormir"):
-                app.action_dormir()
-            return "Asistente en reposo."
-        if is_wake:
-            if app and hasattr(app, "action_despertar"):
-                app.action_despertar()
-            return "Asistente activo."
+        if require_name and not has_prefix:
+            return ""
+        return f"Comando no reconocido: '{text}'"
+
+    cmd, query = match
+
+    if cmd.category == "sistema" and any(
+        p in cmd.patterns[0] for p in ["duerme", "dormir", "reposo",
+                                        "despierta", "despertar", "activo"]
+    ):
+        if not has_prefix:
+            if sleeping:
+                return ""
+            return f"Usa '{assistant_name} {cmd.patterns[0]}' para {cmd.description.lower().replace(' (requiere nombre)', '')}."
+        return cmd.action(app, query)
 
     if sleeping:
         return ""
@@ -481,8 +521,4 @@ def ejecutar_comando(text: str, app=None) -> str:
     if require_name and not has_prefix:
         return ""
 
-    match = registry.match(text)
-    if match:
-        cmd, query = match
-        return cmd.action(app, query)
-    return f"Comando no reconocido: '{text}'"
+    return cmd.action(app, query)
