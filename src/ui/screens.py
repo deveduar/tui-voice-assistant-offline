@@ -77,22 +77,30 @@ class CommandConfigScreen(Screen):
         yield Footer()
 
     def on_mount(self):
-        self._refresh_table()
+        self._build_table()
 
-    def _refresh_table(self):
+    def _build_table(self):
         table = self.query_one("#cmd-table", DataTable)
-        table.clear()
         table.add_columns("", "Comando", "Accion")
-        for i, cmd in enumerate(registry.all()):
+        for cmd in registry.all():
             icon = "✔" if cmd.enabled else "✘"
-            table.add_row(icon, cmd.patterns[0], cmd.description, key=str(i))
-        table.focus()
+            table.add_row(icon, cmd.patterns[0], cmd.description)
 
     def on_data_table_row_selected(self, event):
-        idx = int(event.row_key.value)
-        cmd = registry.all()[idx]
-        cmd.enabled = not cmd.enabled
-        self._refresh_table()
+        self._toggle_cursor()
+
+    def on_key(self, event):
+        if event.key == "enter":
+            event.stop()
+            self._toggle_cursor()
+
+    def _toggle_cursor(self):
+        table = self.query_one("#cmd-table", DataTable)
+        cursor = table.cursor_row
+        if cursor is not None and 0 <= cursor < len(registry.all()):
+            cmd = registry.all()[cursor]
+            cmd.enabled = not cmd.enabled
+            table.update_cell_at((cursor, 0), "✔" if cmd.enabled else "✘")
 
     def on_button_pressed(self, event):
         if event.button.id == "close-btn":
