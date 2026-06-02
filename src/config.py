@@ -4,6 +4,9 @@ import json
 MODEL_PATH = "vosk-model-small-es-0.42"
 CONFIG_PATH = "config.json"
 DEFAULT_MIC_INDEX = 1
+DEFAULT_ASSISTANT_NAME = "flex"
+DEFAULT_REQUIRE_NAME = False
+DEFAULT_SHOW_DISABLED = True
 
 
 def load_config():

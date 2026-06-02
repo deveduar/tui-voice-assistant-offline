@@ -39,6 +39,10 @@ class MicConfigScreen(Screen):
 
 
 class HelpScreen(Screen):
+    def __init__(self, show_disabled=True):
+        super().__init__()
+        self.show_disabled = show_disabled
+
     def compose(self):
         yield Header("Ayuda - Comandos del Asistente")
         yield DataTable(id="help-table")
@@ -49,8 +53,11 @@ class HelpScreen(Screen):
         table = self.query_one("#help-table", DataTable)
         table.add_columns("Comando", "Accion")
         for cmd in registry.all():
+            if not self.show_disabled and not cmd.enabled:
+                continue
             patterns_str = ", ".join(cmd.patterns)
-            table.add_row(patterns_str, cmd.description)
+            label = patterns_str if cmd.enabled else f"{patterns_str} (desactivado)"
+            table.add_row(label, cmd.description)
         table.focus()
 
     def on_data_table_row_selected(self, event):

@@ -4,9 +4,13 @@ import queue
 
 import vosk
 
-from ..config import MODEL_PATH, DEFAULT_MIC_INDEX, load_config, save_config
+from ..config import (
+    MODEL_PATH, DEFAULT_MIC_INDEX,
+    DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME, DEFAULT_SHOW_DISABLED,
+    load_config, save_config,
+)
 from ..audio import AudioManager, list_microphones
-from ..commands import ejecutar_comando
+from ..commands import ejecutar_comando, registry
 
 try:
     from textual.app import App, ComposeResult
@@ -65,6 +69,8 @@ if TEXTUAL_AVAILABLE:
             ("q", "salir", "Salir"),
             ("c", "cambiar_microfono", "Microfono"),
             ("h", "help", "Ayuda"),
+            ("w", "despertar", "Despertar"),
+            ("d", "toggle_disabled_view", "Desactivados"),
         ]
 
         def __init__(self):
@@ -72,6 +78,11 @@ if TEXTUAL_AVAILABLE:
             self.audio_manager = None
             self.audio_queue = queue.Queue()
             self.config = load_config()
+            self.sleeping = False
+
+            cfg_name = self.config.get("assistant_name", DEFAULT_ASSISTANT_NAME)
+            self.assistant_name = cfg_name.strip().lower()
+            self.require_name = self.config.get("require_name", DEFAULT_REQUIRE_NAME)
 
             print("Cargando modelo de voz... (esto puede tardar unos segundos)")
             self.model = vosk.Model(MODEL_PATH)
@@ -85,6 +96,8 @@ if TEXTUAL_AVAILABLE:
             yield Footer()
 
         def on_mount(self):
+            self._load_disabled_state()
+
             mics = list_microphones()
             if not mics:
                 self.query_one("#log", RichLog).write(
@@ -104,6 +117,22 @@ if TEXTUAL_AVAILABLE:
                 self._start_audio(mic_index)
 
             self.set_interval(0.1, self._check_queue)
+
+        def _load_disabled_state(self):
+            disabled = self.config.get("disabled_commands", [])
+            for cmd in registry.all():
+                for pattern in cmd.patterns:
+                    if pattern in disabled:
+                        cmd.enabled = False
+                        break
+
+        def _save_disabled_state(self):
+            disabled = []
+            for cmd in registry.all():
+                if not cmd.enabled:
+                    disabled.append(cmd.patterns[0])
+            self.config["disabled_commands"] = disabled
+            save_config(self.config)
 
         def _start_audio(self, mic_index):
             self.audio_manager = AudioManager(
@@ -132,13 +161,17 @@ if TEXTUAL_AVAILABLE:
                     partial_widget.update(msg["text"])
                 elif msg["type"] == "result":
                     texto = msg["text"]
-                    log.write(texto)
                     respuesta = ejecutar_comando(texto, self)
-                    log.write(respuesta)
+                    if respuesta:
+                        log.write(texto)
+                        log.write(respuesta)
                     partial_widget.update("")
                 elif msg["type"] == "status":
                     if msg["text"] == "listening":
-                        status_widget.update("Escuchando...")
+                        if self.sleeping:
+                            status_widget.update("Dormido")
+                        else:
+                            status_widget.update("Escuchando...")
                     else:
                         status_widget.update(msg["text"])
                 elif msg["type"] == "error":
@@ -146,6 +179,7 @@ if TEXTUAL_AVAILABLE:
                     status_widget.update("Error en microfono")
 
         def action_salir(self):
+            self._save_disabled_state()
             if self.audio_manager:
                 self.audio_manager.stop()
             self.exit()
@@ -159,8 +193,33 @@ if TEXTUAL_AVAILABLE:
                 self.push_screen(MicConfigScreen(mics), self._on_mic_selected)
 
         def action_help(self):
-            self.push_screen(HelpScreen())
+            show_disabled = self.config.get(
+                "show_disabled_commands", DEFAULT_SHOW_DISABLED
+            )
+            self.push_screen(HelpScreen(show_disabled))
+
+        def action_dormir(self):
+            self.sleeping = True
+            self.query_one("#status-bar", Static).update("Dormido")
+            self.query_one("#partial-text", Static).update(
+                f"Di '{self.assistant_name} despierta' para activar"
+            )
+
+        def action_despertar(self):
+            self.sleeping = False
+            self.query_one("#status-bar", Static).update("Escuchando...")
+            self.query_one("#partial-text", Static).update("")
+
+        def action_toggle_disabled_view(self):
+            current = self.config.get("show_disabled_commands", DEFAULT_SHOW_DISABLED)
+            self.config["show_disabled_commands"] = not current
+            save_config(self.config)
+            state = "activada" if self.config["show_disabled_commands"] else "desactivada"
+            self.query_one("#log", RichLog).write(
+                f"Vista de comandos desactivados: {state}"
+            )
 
         def on_unmount(self):
+            self._save_disabled_state()
             if self.audio_manager:
                 self.audio_manager.stop()
