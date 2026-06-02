@@ -43,8 +43,13 @@ class CommandRegistry:
 
 def gwm(*args):
     try:
-        subprocess.run(["glazewm", *args], capture_output=True, check=False)
-        return True
+        result = subprocess.run(
+            ["glazewm", "command", *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.returncode == 0
     except FileNotFoundError:
         return False
 
@@ -83,6 +88,11 @@ def _ayuda(app, q):
     if app:
         app.action_help()
     return "Abriendo ayuda..."
+
+def _configurar_comandos(app, q):
+    if app:
+        app.action_config_comandos()
+    return "Abriendo configuracion de comandos."
 
 def _abrir_terminal(app, q):
     os.system("wt")
@@ -202,6 +212,12 @@ registry.add(Command(
     patterns=["ayuda", "comandos", "que puedes hacer"],
     description="Muestra la pantalla de ayuda con todos los comandos",
     action=_ayuda,
+))
+
+registry.add(Command(
+    patterns=["configurar comandos", "gestionar comandos", "personalizar comandos"],
+    description="Abre la pantalla para activar/desactivar comandos",
+    action=_configurar_comandos,
 ))
 
 # --- GlazeWM commands ---

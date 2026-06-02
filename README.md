@@ -75,6 +75,8 @@ si no, cae automaticamente al modo texto.
 | `H` | Abrir pantalla de ayuda con todos los comandos |
 | `W` | Despertar al asistente (si esta dormido) |
 | `D` | Alternar vista de comandos desactivados en ayuda |
+| `M` | Abrir pantalla de configuracion de comandos |
+| `Enter` | (en config de comandos) Activar/desactivar comando |
 
 ## Nombre del asistente (wake word)
 
@@ -109,6 +111,7 @@ Los comandos de dormir/despertar **siempre requieren** el nombre del asistente.
 | "cambiar microfono" / "cambiar microfono" | Abre menu para cambiar microfono |
 | "ayuda" / "comandos" / "que puedes hacer" | Muestra la pantalla de ayuda |
 | "salir" / "adios" / "cerrar asistente" | Cierra el asistente |
+| "configurar comandos" / "gestionar comandos" | Abre la pantalla para activar/desactivar comandos |
 | "[nombre] duerme" | Pone el asistente en reposo |
 | "[nombre] despierta" | Activa el asistente |
 

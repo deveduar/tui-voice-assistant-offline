@@ -69,3 +69,43 @@ class HelpScreen(Screen):
 
     def key_escape(self):
         self.dismiss()
+
+
+class CommandConfigScreen(Screen):
+    def compose(self):
+        yield Header("Configurar Comandos")
+        yield Label(
+            "Enter para activar/desactivar un comando. Escape para salir.",
+            id="config-label",
+        )
+        yield ListView(id="cmd-list")
+        yield Button("Cerrar y guardar", variant="primary", id="close-btn")
+        yield Footer()
+
+    def on_mount(self):
+        self._refresh_list()
+
+    def _refresh_list(self):
+        lv = self.query_one("#cmd-list", ListView)
+        lv.clear()
+        for cmd in registry.all():
+            status = "ACT" if cmd.enabled else "DES"
+            text = f"[{status}] {cmd.patterns[0]} — {cmd.description}"
+            lv.append(ListItem(Label(text)))
+        if registry.all():
+            lv.index = 0
+        lv.focus()
+
+    def on_list_view_selected(self, event):
+        lv = event.list_view
+        if lv.index is not None and 0 <= lv.index < len(registry.all()):
+            cmd = registry.all()[lv.index]
+            cmd.enabled = not cmd.enabled
+            self._refresh_list()
+
+    def on_button_pressed(self, event):
+        if event.button.id == "close-btn":
+            self.dismiss()
+
+    def key_escape(self):
+        self.dismiss()

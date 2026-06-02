@@ -16,7 +16,7 @@ try:
     from textual.app import App, ComposeResult
     from textual.widgets import Header, Footer, RichLog, Static
     from textual.containers import Container
-    from .screens import MicConfigScreen, HelpScreen
+    from .screens import MicConfigScreen, HelpScreen, CommandConfigScreen
     TEXTUAL_AVAILABLE = True
 except ImportError:
     TEXTUAL_AVAILABLE = False
@@ -71,6 +71,7 @@ if TEXTUAL_AVAILABLE:
             ("h", "help", "Ayuda"),
             ("w", "despertar", "Despertar"),
             ("d", "toggle_disabled_view", "Desactivados"),
+            ("m", "config_comandos", "Comandos"),
         ]
 
         def __init__(self):
@@ -209,6 +210,13 @@ if TEXTUAL_AVAILABLE:
             self.sleeping = False
             self.query_one("#status-bar", Static).update("Escuchando...")
             self.query_one("#partial-text", Static).update("")
+
+        def action_config_comandos(self):
+            self.push_screen(CommandConfigScreen(), self._on_config_closed)
+
+        def _on_config_closed(self, _result=None):
+            self._save_disabled_state()
+            self.query_one("#log", RichLog).write("Configuracion de comandos guardada.")
 
         def action_toggle_disabled_view(self):
             current = self.config.get("show_disabled_commands", DEFAULT_SHOW_DISABLED)
