@@ -7,10 +7,11 @@ import vosk
 from ..config import (
     MODEL_PATH, DEFAULT_MIC_INDEX,
     DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME,
-    load_config, save_config,
+    get_config, save_config,
 )
 from ..audio import AudioManager, list_microphones
 from ..commands import ejecutar_comando, registry
+from ..writer import write_text
 
 try:
     from textual.app import App, ComposeResult
@@ -20,6 +21,9 @@ try:
     TEXTUAL_AVAILABLE = True
 except ImportError:
     TEXTUAL_AVAILABLE = False
+
+_WRITE_ENTER_PATTERNS = ["modo escritura", "modo dictado", "empezar a escribir"]
+_WRITE_EXIT_PATTERNS = ["modo comandos", "modo normal", "salir de escritura", "dejar de escribir"]
 
 
 def run():
@@ -71,14 +75,17 @@ if TEXTUAL_AVAILABLE:
             ("h", "help", "Ayuda"),
             ("w", "despertar", "Despertar"),
             ("m", "config_comandos", "Comandos"),
+            ("t", "toggle_escritura", "Escribir"),
         ]
 
         def __init__(self):
+            self.config = get_config()
             super().__init__()
+            self.theme = self.config.get("theme", "textual-dark")
             self.audio_manager = None
             self.audio_queue = queue.Queue()
-            self.config = load_config()
             self.sleeping = False
+            self.writing_mode = False
 
             cfg_name = self.config.get("assistant_name", DEFAULT_ASSISTANT_NAME)
             self.assistant_name = cfg_name.strip().lower()
@@ -86,6 +93,10 @@ if TEXTUAL_AVAILABLE:
 
             print("Cargando modelo de voz... (esto puede tardar unos segundos)")
             self.model = vosk.Model(MODEL_PATH)
+
+        def watch_theme(self, theme_name: str):
+            self.config["theme"] = theme_name
+            save_config(self.config)
 
         def compose(self):
             yield Header("Asistente de Voz")
@@ -150,10 +161,18 @@ if TEXTUAL_AVAILABLE:
             )
             self._start_audio(mic_index)
 
+        def _update_status(self):
+            status = self.query_one("#status-bar", Static)
+            if self.sleeping:
+                status.update("Dormido")
+            elif self.writing_mode:
+                status.update("Escribiendo...")
+            else:
+                status.update("Escuchando...")
+
         def _check_queue(self):
             log = self.query_one("#log", RichLog)
             partial_widget = self.query_one("#partial-text", Static)
-            status_widget = self.query_one("#status-bar", Static)
 
             while not self.audio_queue.empty():
                 msg = self.audio_queue.get_nowait()
@@ -161,22 +180,43 @@ if TEXTUAL_AVAILABLE:
                     partial_widget.update(msg["text"])
                 elif msg["type"] == "result":
                     texto = msg["text"]
-                    respuesta = ejecutar_comando(texto, self)
-                    if respuesta:
-                        log.write(texto)
-                        log.write(respuesta)
+                    texto_lower = texto.lower().strip()
+                    handled = False
+
+                    if self.writing_mode:
+                        if any(p in texto_lower for p in _WRITE_EXIT_PATTERNS):
+                            self.writing_mode = False
+                            self._update_status()
+                            log.write(texto)
+                            log.write("Modo escritura desactivado. Modo comandos.")
+                            handled = True
+                        else:
+                            write_text(texto)
+                            log.write(f"[Escritura] {texto}")
+                            handled = True
+                    else:
+                        if any(p in texto_lower for p in _WRITE_ENTER_PATTERNS):
+                            self.writing_mode = True
+                            self._update_status()
+                            log.write(texto)
+                            log.write("Modo escritura activado. Todo lo que digas se escribira en la ventana activa.")
+                            handled = True
+
+                    if not handled:
+                        respuesta = ejecutar_comando(texto, self)
+                        if respuesta:
+                            log.write(texto)
+                            log.write(respuesta)
+
                     partial_widget.update("")
                 elif msg["type"] == "status":
                     if msg["text"] == "listening":
-                        if self.sleeping:
-                            status_widget.update("Dormido")
-                        else:
-                            status_widget.update("Escuchando...")
+                        self._update_status()
                     else:
-                        status_widget.update(msg["text"])
+                        self.query_one("#status-bar", Static).update(msg["text"])
                 elif msg["type"] == "error":
                     log.write(f"ERROR: {msg['message']}")
-                    status_widget.update("Error en microfono")
+                    self.query_one("#status-bar", Static).update("Error en microfono")
 
         def action_salir(self):
             self._save_disabled_state()
@@ -197,15 +237,24 @@ if TEXTUAL_AVAILABLE:
 
         def action_dormir(self):
             self.sleeping = True
-            self.query_one("#status-bar", Static).update("Dormido")
+            self._update_status()
             self.query_one("#partial-text", Static).update(
                 f"Di '{self.assistant_name} despierta' para activar"
             )
 
         def action_despertar(self):
             self.sleeping = False
-            self.query_one("#status-bar", Static).update("Escuchando...")
+            self._update_status()
             self.query_one("#partial-text", Static).update("")
+
+        def action_toggle_escritura(self):
+            self.writing_mode = not self.writing_mode
+            self._update_status()
+            log = self.query_one("#log", RichLog)
+            if self.writing_mode:
+                log.write("Modo escritura activado por teclado.")
+            else:
+                log.write("Modo escritura desactivado.")
 
         def action_config_comandos(self):
             self.push_screen(CommandConfigScreen(), self._on_config_closed)

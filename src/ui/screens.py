@@ -83,17 +83,16 @@ class CommandConfigScreen(Screen):
         table = self.query_one("#cmd-table", DataTable)
         table.clear()
         table.add_columns("", "Comando", "Accion")
-        for cmd in registry.all():
+        for i, cmd in enumerate(registry.all()):
             icon = "✔" if cmd.enabled else "✘"
-            table.add_row(icon, cmd.patterns[0], cmd.description)
+            table.add_row(icon, cmd.patterns[0], cmd.description, key=str(i))
         table.focus()
 
     def on_data_table_row_selected(self, event):
-        cursor = self.query_one("#cmd-table", DataTable).cursor_row
-        if cursor is not None and 0 <= cursor < len(registry.all()):
-            cmd = registry.all()[cursor]
-            cmd.enabled = not cmd.enabled
-            self._refresh_table()
+        idx = int(event.row_key.value)
+        cmd = registry.all()[idx]
+        cmd.enabled = not cmd.enabled
+        self._refresh_table()
 
     def on_button_pressed(self, event):
         if event.button.id == "close-btn":

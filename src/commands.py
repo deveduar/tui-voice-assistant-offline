@@ -4,6 +4,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from .config import get_config
+
 
 @dataclass
 class Command:
@@ -113,6 +115,11 @@ def _anterior_escritorio(app, q):
         return "Anterior escritorio."
     return "Error: gwm no disponible."
 
+def _ultimo_escritorio(app, q):
+    if gwm("focus", "--recent-workspace"):
+        return "Ultimo escritorio."
+    return "Error: gwm no disponible."
+
 def _maximizar_ventana(app, q):
     if gwm("toggle-fullscreen"):
         return "Ventana maximizada."
@@ -137,6 +144,56 @@ def _recargar_config(app, q):
     if gwm("reload-config"):
         return "Configuracion recargada."
     return "Error: gwm no disponible."
+
+def _ciclar_foco(app, q):
+    if gwm("wm-cycle-focus"):
+        return "Ciclando foco entre ventanas."
+    return "Error: gwm no disponible."
+
+def _cambiar_direccion_tiling(app, q):
+    if gwm("toggle-tiling-direction"):
+        return "Direccion de tiling cambiada."
+    return "Error: gwm no disponible."
+
+def _redibujar(app, q):
+    if gwm("wm-redraw"):
+        return "Ventanas redibujadas."
+    return "Error: gwm no disponible."
+
+def _pausar_glaze(app, q):
+    if gwm("wm-toggle-pause"):
+        return "GlazeWM pausado/reanudado."
+    return "Error: gwm no disponible."
+
+def _focus_direction(direction):
+    def action(app, q):
+        if gwm("focus", "--direction", direction):
+            return f"Enfocando ventana a la {'izquierda' if direction == 'left' else 'derecha' if direction == 'right' else 'arriba' if direction == 'up' else 'abajo'}."
+        return "Error: gwm no disponible."
+    return action
+
+def _move_direction(direction):
+    def action(app, q):
+        if gwm("move", "--direction", direction):
+            return f"Moviendo ventana a la {'izquierda' if direction == 'left' else 'derecha' if direction == 'right' else 'arriba' if direction == 'up' else 'abajo'}."
+        return "Error: gwm no disponible."
+    return action
+
+def _abrir_programa(app, q):
+    q = q.strip().lower()
+    if not q:
+        return "Di que programa quieres abrir."
+    config = get_config()
+    launchers = config.get("custom_launchers", {})
+    if q in launchers:
+        cmd = launchers[q]
+        subprocess.Popen(cmd, shell=True)
+        return f"Abriendo {q}."
+    try:
+        subprocess.Popen(q, shell=True)
+        return f"Abriendo {q}."
+    except Exception:
+        return f"No se encontro el programa '{q}'."
 
 def _focus_workspace(n):
     def action(app, q):
@@ -247,6 +304,12 @@ registry.add(Command(
 ))
 
 registry.add(Command(
+    patterns=["ultimo escritorio", "volver", "escritorio anterior"],
+    description="Vuelve al ultimo escritorio activo",
+    action=_ultimo_escritorio,
+))
+
+registry.add(Command(
     patterns=["maximizar ventana", "maximizar"],
     description="Pone la ventana activa en pantalla completa",
     action=_maximizar_ventana,
@@ -276,6 +339,52 @@ registry.add(Command(
     action=_recargar_config,
 ))
 
+registry.add(Command(
+    patterns=["ciclar foco", "siguiente ventana", "ciclar ventana"],
+    description="Cambia el foco entre ventanas flotantes y ancladas",
+    action=_ciclar_foco,
+))
+
+registry.add(Command(
+    patterns=["cambiar direccion", "cambiar direccion tiling"],
+    description="Cambia la direccion de insercion de nuevas ventanas",
+    action=_cambiar_direccion_tiling,
+))
+
+registry.add(Command(
+    patterns=["redibujar", "refrescar ventanas"],
+    description="Redibuja todas las ventanas en GlazeWM",
+    action=_redibujar,
+))
+
+registry.add(Command(
+    patterns=["pausar glaze", "pausar ventanas", "reanudar glaze"],
+    description="Pausa o reanuda la gestion de ventanas de GlazeWM",
+    action=_pausar_glaze,
+))
+
+# Focus / move direction
+_DIR_NAMES = {
+    "left": ("izquierda", "izquierdo"),
+    "right": ("derecha", "derecho"),
+    "up": ("arriba", "superior"),
+    "down": ("abajo", "inferior"),
+}
+for direction, (es_name, _) in _DIR_NAMES.items():
+    registry.add(Command(
+        patterns=[f"enfocar {es_name}", f"enfoque {es_name}"],
+        description=f"Enfoca la ventana a la {es_name}",
+        action=_focus_direction(direction),
+    ))
+
+for direction, (es_name, _) in _DIR_NAMES.items():
+    registry.add(Command(
+        patterns=[f"mover {es_name}", f"desplazar {es_name}"],
+        description=f"Mueve la ventana activa a la {es_name}",
+        action=_move_direction(direction),
+    ))
+
+# Workspace focus / move by number
 _NUM_WORDS = ["", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"]
 
 for i in range(1, 10):
@@ -301,6 +410,14 @@ for i in range(1, 10):
         description=f"Mueve la ventana activa al escritorio virtual {i}",
         action=_move_to_workspace(i),
     ))
+
+# Custom launcher (must be last to let specific "abrir" commands match first)
+registry.add(Command(
+    patterns=["abrir"],
+    description="Abre un programa configurado (codigo, lapce, notepad plus, explorador, ...)",
+    needs_query=True,
+    action=_abrir_programa,
+))
 
 # Shutdown commands (commented)
 # registry.add(Command(
