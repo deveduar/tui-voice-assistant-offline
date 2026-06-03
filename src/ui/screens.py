@@ -14,6 +14,13 @@ _CATEGORIES = [
 
 
 class CommandConfigScreen(Screen):
+    BINDINGS = [
+        ("q", "noop", ""),
+    ]
+
+    def action_noop(self):
+        pass
+
     def compose(self):
         yield Header("Menu Comandos")
         yield Label(

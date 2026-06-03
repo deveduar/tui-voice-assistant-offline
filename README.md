@@ -58,10 +58,9 @@ si no, cae automaticamente al modo texto.
 +------------------------------------------+
 |  texto parcial de voz...                 |  <- Static (texto parcial)
 +------------------------------------------+
-|  Escuchando... / Dormido / Escribiendo... |  <- Status bar
+|  Escuchando... [small-es-0.42]            |  <- Status bar (incluye modelo)
 +------------------------------------------+
-|  [Q] Salir [C] Micro [H] Ayuda           |
-|  [W] Despertar [T] Escribir [M] Comandos |  <- Footer
+|  [Q] Salir  [M] Menu Comandos            |  <- Footer
 +------------------------------------------+
 ```
 
@@ -70,12 +69,11 @@ si no, cae automaticamente al modo texto.
 | Tecla | Accion |
 |-------|--------|
 | `Q` | Salir del asistente |
-| `C` | Abrir menu de seleccion de microfono |
-| `H` | Abrir pantalla de ayuda con todos los comandos |
-| `W` | Despertar al asistente (si esta dormido) |
-| `T` | Activar/desactivar modo escritura (dictado) |
-| `M` | Abrir pantalla de configuracion de comandos |
-| `Enter` | (en config de comandos) Activar/desactivar comando |
+| `M` | Abrir Menu Comandos (activar/desactivar comandos) |
+| `M` | Abrir Menu Comandos (activar/desactivar comandos) |
+| `Ctrl+P` | Abrir paleta de comandos (micro, modelo, dormir, escritura, ...) |
+| `Enter` | (en Menu Comandos) Activar/desactivar comando |
+| `Escape` | Salir del Menu Comandos (guarda cambios) |
 
 ## Nombre del asistente (wake word)
 
@@ -90,23 +88,48 @@ para todos los comandos. Por defecto esta en `false` (el nombre es opcional).
 
 Los comandos de dormir/despertar **siempre requieren** el nombre del asistente.
 
-## Modo dormir / despertar
-
-- **"flex duerme"** — el asistente deja de procesar comandos (sigue escuchando).
-  Muestra "Dormido" en la barra de estado.
-- **"flex despierta"** — vuelve al modo normal.
-- Tambien puedes usar la tecla `W` para despertar.
-
 ## Modo escritura (dictado)
 
-Activa el modo escritura con **"modo escritura"** / **"modo dictado"** o con la tecla `T`.
+Activa el modo escritura con **"modo escritura"** / **"modo dictado"**.
 En este modo, todo lo que digas se escribe automaticamente en la ventana activa
 (usa portapapeles + Ctrl+V). Ideal para tomar notas, escribir documentos, etc.
 
-- Entrar: "modo escritura", "modo dictado", tecla `T`
-- Salir: "modo comandos", "modo normal", tecla `T`
+- Entrar: "modo escritura", "modo dictado", o desde `Ctrl+P`
+- Salir: "modo comandos", "modo normal", o desde `Ctrl+P`
 - La barra de estado muestra "Escribiendo..." cuando esta activo
 - Cada frase dictada se registra en el log con el prefijo `[Escritura]`
+
+## Modo dormir / despertar
+
+- **"[nombre] duerme"** — el asistente deja de procesar comandos (sigue escuchando).
+  Muestra "Dormido" en la barra de estado.
+- **"[nombre] despierta"** — vuelve al modo normal.
+- Tambien se puede desde `Ctrl+P` en la paleta de comandos.
+- Siempre requieren el nombre del asistente (ej: "flex duerme").
+
+## Paleta de comandos (Ctrl+P)
+
+La paleta de comandos permite acceder rapidamente a funciones sin usar teclas dedicadas:
+
+- **Microfono**: cambiar microfono activo
+- **Modelo**: cambiar modelo de voz (grande/pequeno)
+- **Dormir / Despertar**: poner en reposo o activar
+- **Modo escritura / Modo comandos**: activar/desactivar dictado
+- **Configurar comandos**: abrir Menu Comandos
+
+Al abrirla con `Ctrl+P` muestra un placeholder con las opciones disponibles. Escribe para filtrar.
+
+## Seleccion de modelo de voz
+
+El asistente detecta automaticamente las carpetas `vosk-model-*` en la raiz del proyecto.
+Puedes cambiar entre modelos desde la paleta de comandos (`Ctrl+P`, escribe "modelo").
+El nombre del modelo activo se muestra en la barra de estado.
+
+Modelos disponibles:
+- `vosk-model-small-es-0.42` (~40 MB, rapido, defecto)
+- `vosk-model-es-0.42` (~1.5 GB, mas preciso)
+
+El cambio de modelo ocurre en caliente: para el audio, carga el nuevo modelo y reanuda.
 
 ## Comandos de voz
 
@@ -119,12 +142,9 @@ En este modo, todo lo que digas se escribe automaticamente en la ventana activa
 | "abrir navegador" / "abrir internet" | Abre el navegador en google.com |
 | "buscar en google [consulta]" | Busca en Google |
 | "abrir [programa]" | Abre un programa configurado (codigo, lapce, notepad plus, explorador, ...) |
-| "cambiar microfono" / "cambiar microfono" | Abre menu para cambiar microfono |
-| "ayuda" / "comandos" / "que puedes hacer" | Muestra la pantalla de ayuda |
+| "cambiar microfono" / "cambiar microfono" | Cambia de microfono |
 | "salir" / "adios" / "cerrar asistente" | Cierra el asistente |
-| "configurar comandos" / "gestionar comandos" | Abre la pantalla para activar/desactivar comandos |
-| "[nombre] duerme" | Pone el asistente en reposo |
-| "[nombre] despierta" | Activa el asistente |
+| "configurar comandos" / "gestionar comandos" | Abre el Menu Comandos |
 
 ### GlazeWM (ventanas y escritorios)
 
@@ -172,7 +192,7 @@ Puedes anadir o modificar entradas editando `config.json`.
 ### Desactivar comandos
 
 Cada comando tiene un campo `enabled`. Los comandos desactivados no
-se ejecutan y se muestran en la ayuda con la etiqueta "(desactivado)".
+se ejecutan y se muestran en el Menu Comandos con la marca "✘".
 
 El estado de los comandos desactivados se guarda en `config.json`
 (disabled_commands) y persiste entre sesiones.
@@ -187,6 +207,7 @@ El archivo `config.json` se genera automaticamente en la raiz del proyecto:
   "assistant_name": "flex",
   "require_name": false,
   "theme": "textual-dark",
+  "model_name": "vosk-model-small-es-0.42",
   "disabled_commands": [],
   "custom_launchers": {
     "codigo": "code",
@@ -212,6 +233,7 @@ El archivo `config.json` se genera automaticamente en la raiz del proyecto:
 | `assistant_name` | Nombre del asistente (wake word) |
 | `require_name` | Si es true, todos los comandos requieren el nombre |
 | `theme` | Tema de Textual ("textual-dark", "monokai", "dracula", "gruvbox", etc.) |
+| `model_name` | Ruta del modelo Vosk (ej: "vosk-model-small-es-0.42") |
 | `disabled_commands` | Lista de patrones de comandos desactivados |
 | `custom_launchers` | Mapa de voz → comando para "abrir [programa]" |
 
@@ -246,7 +268,7 @@ audio-vosk/
     +-- ui/
         +-- __init__.py
         +-- app.py                 # VoiceAssistantApp (Textual) + run()
-        +-- screens.py             # MicConfigScreen + HelpScreen + CommandConfigScreen
+        +-- screens.py             # CommandConfigScreen
         +-- fallback.py            # Modo texto sin Textual
 ```
 

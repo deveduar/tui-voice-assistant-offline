@@ -14,7 +14,12 @@ def write_text(text):
 
     text_bytes = (text + "\0").encode("utf-16-le")
     h = kernel32.GlobalAlloc(0x2000, len(text_bytes))
+    if not h:
+        return False
     p = kernel32.GlobalLock(h)
+    if not p:
+        kernel32.GlobalFree(h)
+        return False
     ctypes.memmove(p, text_bytes, len(text_bytes))
     kernel32.GlobalUnlock(h)
     user32.SetClipboardData(13, h)

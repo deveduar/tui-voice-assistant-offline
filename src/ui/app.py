@@ -52,6 +52,10 @@ def run():
 if TEXTUAL_AVAILABLE:
 
     class VoiceAssistantCommands(Provider):
+        @property
+        def placeholder(self) -> str:
+            return "micro, modelo, dormir, escritura, comandos..."
+
         async def search(self, query: str):
             app = self.app
             q = query.lower()
@@ -62,8 +66,8 @@ if TEXTUAL_AVAILABLE:
                     yield Hit(
                         10,
                         f"[{idx}] {name}",
-                        "Seleccionar este microfono",
                         partial(app.action_palette_mic, idx),
+                        "Seleccionar este microfono",
                     )
 
             if not q or "modelo" in q or "model" in q:
@@ -72,30 +76,32 @@ if TEXTUAL_AVAILABLE:
                     yield Hit(
                         20,
                         mname,
-                        "Usar este modelo de voz",
                         partial(app.action_palette_model, mname),
+                        "Usar este modelo de voz",
                     )
 
             if not q or "dormir" in q or "suspen" in q or "reposo" in q:
-                yield Hit(30, "Dormir asistente", "Poner en reposo", app.action_dormir)
+                yield Hit(30, "Dormir asistente", app.action_dormir, "Poner en reposo")
 
             if not q or "despertar" in q or "activar" in q:
-                yield Hit(31, "Despertar asistente", "Activar del reposo", app.action_despertar)
+                yield Hit(31, "Despertar asistente", app.action_despertar, "Activar del reposo")
 
             if not q or "escritura" in q or "dictado" in q:
                 yield Hit(
-                    40, "Modo escritura", "Activar dictado",
+                    40, "Modo escritura",
                     partial(app._toggle_writing_from_palette, True),
+                    "Activar dictado",
                 )
 
             if not q or "comandos" in q or "normal" in q:
                 yield Hit(
-                    41, "Modo comandos", "Desactivar dictado",
+                    41, "Modo comandos",
                     partial(app._toggle_writing_from_palette, False),
+                    "Desactivar dictado",
                 )
 
             if not q or "config" in q or "comandos" in q:
-                yield Hit(50, "Configurar comandos", "Abrir configuracion de comandos", app.action_config_comandos)
+                yield Hit(50, "Configurar comandos", app.action_config_comandos, "Abrir configuracion de comandos")
 
 
     class VoiceAssistantApp(App):
@@ -205,19 +211,21 @@ if TEXTUAL_AVAILABLE:
                 mic_index, self.model, self.audio_queue
             )
             self.audio_manager.start()
+            model_short = self._model_name.replace("vosk-model-", "").replace("-es-", "-")
             self.query_one("#status-bar", Static).update(
-                f"Microfono [{mic_index}] activo"
+                f"Microfono [{mic_index}] activo [{model_short}]"
             )
 
         def _update_status(self):
             try:
                 status = self.query_one("#status-bar", Static)
+                model_short = self._model_name.replace("vosk-model-", "").replace("-es-", "-")
                 if self.sleeping:
-                    status.update("Dormido")
+                    status.update(f"Dormido [{model_short}]")
                 elif self.writing_mode:
-                    status.update("Escribiendo...")
+                    status.update(f"Escribiendo... [{model_short}]")
                 else:
-                    status.update("Escuchando...")
+                    status.update(f"Escuchando... [{model_short}]")
             except Exception:
                 pass
 
@@ -355,11 +363,23 @@ if TEXTUAL_AVAILABLE:
             if self.audio_manager:
                 self.audio_manager.stop()
                 self.audio_manager = None
+            try:
+                print(f"Cargando modelo: {model_name}")
+                new_model = vosk.Model(model_name)
+            except Exception as e:
+                log = self.query_one("#log", RichLog)
+                log.write(f"ERROR: No se pudo cargar '{model_name}': {e}")
+                log.write("Revirtiendo al modelo anterior.")
+                self.config["model_name"] = current
+                save_config(self.config)
+                mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
+                if self.audio_manager:
+                    self._start_audio(mic_index)
+                return
             self.config["model_name"] = model_name
             save_config(self.config)
             self._model_name = model_name
-            print(f"Cargando modelo: {model_name}")
-            self.model = vosk.Model(model_name)
+            self.model = new_model
             mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
             self._start_audio(mic_index)
             self.query_one("#log", RichLog).write(f"Modelo cambiado a {model_name}.")
