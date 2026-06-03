@@ -1,6 +1,7 @@
 import os
 import webbrowser
 import subprocess
+import shutil
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -39,6 +40,16 @@ class CommandRegistry:
                     return cmd, query
         return None
 
+    def match_disabled(self, text: str) -> Optional[Command]:
+        text = text.lower().strip()
+        for cmd in self._commands:
+            if cmd.enabled:
+                continue
+            for pattern in cmd.patterns:
+                if pattern in text:
+                    return cmd
+        return None
+
     def all(self) -> list[Command]:
         return list(self._commands)
 
@@ -61,11 +72,11 @@ def gwm(*args):
 # --- Action functions ---
 
 def _abrir_notepad(app, q):
-    os.system("notepad")
+    subprocess.Popen("notepad", shell=True)
     return "Abriendo el bloc de notas."
 
 def _abrir_calc(app, q):
-    os.system("calc")
+    subprocess.Popen("calc", shell=True)
     return "Abriendo la calculadora."
 
 def _abrir_navegador(app, q):
@@ -85,7 +96,7 @@ def _cambiar_microfono(app, q):
 
 def _salir(app, q):
     if app:
-        app.action_salir()
+        app.call_later(app.action_salir)
     return "Cerrando asistente..."
 
 def _configurar_comandos(app, q):
@@ -94,7 +105,7 @@ def _configurar_comandos(app, q):
     return "Abriendo configuracion de comandos."
 
 def _abrir_terminal(app, q):
-    os.system("wt")
+    subprocess.Popen("wt", shell=True)
     return "Abriendo terminal."
 
 def _cerrar_ventana(app, q):
@@ -183,14 +194,12 @@ def _abrir_programa(app, q):
     config = get_config()
     launchers = config.get("custom_launchers", {})
     if q in launchers:
-        cmd = launchers[q]
-        subprocess.Popen(cmd, shell=True)
+        subprocess.Popen(launchers[q], shell=True)
         return f"Abriendo {q}."
-    try:
-        subprocess.Popen(q, shell=True)
-        return f"Abriendo {q}."
-    except Exception:
+    if not shutil.which(q):
         return f"No se encontro el programa '{q}'."
+    subprocess.Popen(q, shell=True)
+    return f"Abriendo {q}."
 
 def _duerme(app, q):
     if app:
@@ -496,6 +505,14 @@ def ejecutar_comando(text: str, app=None) -> str:
         if text.startswith(assistant_name + " "):
             text = text[len(assistant_name) + 1:].strip()
             has_prefix = True
+
+    disabled_cmd = registry.match_disabled(text)
+    if disabled_cmd:
+        if sleeping:
+            return ""
+        if require_name and not has_prefix:
+            return ""
+        return f"Comando deshabilitado: {disabled_cmd.description}"
 
     match = registry.match(text)
     if not match:

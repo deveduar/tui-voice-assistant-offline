@@ -1,6 +1,7 @@
 import os
 import sys
 import queue
+import asyncio
 from functools import partial
 
 import vosk
@@ -59,50 +60,82 @@ if TEXTUAL_AVAILABLE:
             app = self.app
             q = query.lower()
 
-            if not q or "micro" in q or "mic" in q:
+            if not q:
                 mics = list_microphones()
                 for idx, name in mics:
-                    yield Hit(
-                        10,
-                        f"[{idx}] {name}",
-                        partial(app.action_palette_mic, idx),
-                        "Seleccionar este microfono",
-                    )
+                    yield Hit(10, f"[{idx}] {name}",
+                              partial(app.action_palette_mic, idx),
+                              "Seleccionar microfono")
+                models = scan_models()
+                for mname in models[:3]:
+                    yield Hit(20, os.path.basename(mname),
+                              partial(app.action_palette_model, mname),
+                              "Usar modelo de voz")
+                yield Hit(30, "Modo escritura",
+                          partial(app._toggle_writing_from_palette, True),
+                          "Activar dictado")
+                yield Hit(31, "Modo comandos",
+                          partial(app._toggle_writing_from_palette, False),
+                          "Desactivar dictado")
+                yield Hit(40, "Dormir asistente", app.action_dormir, "Poner en reposo")
+                yield Hit(41, "Despertar asistente", app.action_despertar, "Activar del reposo")
+                yield Hit(50, "Configurar comandos", app.action_config_comandos, "Abrir configuracion")
+                return
 
-            if not q or "modelo" in q or "model" in q:
+            if "micro" in q or "mic" in q:
+                mics = list_microphones()
+                for idx, name in mics:
+                    yield Hit(10, f"[{idx}] {name}",
+                              partial(app.action_palette_mic, idx),
+                              "Seleccionar microfono")
+                return
+
+            if "modelo" in q or "model" in q:
                 models = scan_models()
                 for mname in models:
-                    short = os.path.basename(mname)
-                    yield Hit(
-                        20,
-                        short,
-                        partial(app.action_palette_model, mname),
-                        "Usar este modelo de voz",
-                    )
+                    yield Hit(20, os.path.basename(mname),
+                              partial(app.action_palette_model, mname),
+                              "Usar modelo de voz")
+                return
 
-            if not q or "dormir" in q or "suspen" in q or "reposo" in q:
-                yield Hit(30, "Dormir asistente", app.action_dormir, "Poner en reposo")
+            if "modo" in q:
+                yield Hit(30, "Modo escritura",
+                          partial(app._toggle_writing_from_palette, True),
+                          "Activar dictado")
+                yield Hit(31, "Modo comandos",
+                          partial(app._toggle_writing_from_palette, False),
+                          "Desactivar dictado")
+                return
 
-            if not q or "despertar" in q or "activar" in q:
-                yield Hit(31, "Despertar asistente", app.action_despertar, "Activar del reposo")
+            if "escritura" in q or "dictado" in q:
+                yield Hit(30, "Modo escritura",
+                          partial(app._toggle_writing_from_palette, True),
+                          "Activar dictado")
+                return
 
-            if not q or "escritura" in q or "dictado" in q:
-                yield Hit(
-                    40, "Modo escritura",
-                    partial(app._toggle_writing_from_palette, True),
-                    "Activar dictado",
-                )
+            if "comandos" in q:
+                yield Hit(31, "Modo comandos",
+                          partial(app._toggle_writing_from_palette, False),
+                          "Desactivar dictado")
+                return
 
-            if not q or "comandos" in q or "normal" in q:
-                yield Hit(
-                    41, "Modo comandos",
-                    partial(app._toggle_writing_from_palette, False),
-                    "Desactivar dictado",
-                )
+            if any(kw in q for kw in ["asistente", "dormir", "suspen", "reposo",
+                                       "despertar", "despierta", "activar"]):
+                yield Hit(40, "Dormir asistente", app.action_dormir, "Poner en reposo")
+                yield Hit(41, "Despertar asistente", app.action_despertar, "Activar del reposo")
+                return
 
-            if not q or "config" in q or "comandos" in q:
-                yield Hit(50, "Configurar comandos", app.action_config_comandos, "Abrir configuracion de comandos")
+            if any(kw in q for kw in ["configurar", "config", "configura"]):
+                yield Hit(50, "Configurar comandos", app.action_config_comandos, "Abrir configuracion")
+                return
 
+
+    class _CommandPalette(CommandPalette):
+        def on_mount(self) -> None:
+            try:
+                self.query_one("Input").placeholder = "micro, modelo, modo, escritura, comandos, asistente, configurar..."
+            except Exception:
+                pass
 
     class VoiceAssistantApp(App):
         CSS = """
@@ -152,7 +185,7 @@ if TEXTUAL_AVAILABLE:
             self._model_name = resolve_model_path(raw)
 
             vosk.SetLogLevel(-1)
-            print("Cargando modelo de voz... (esto puede tardar unos segundos)")
+            print(f"Cargando modelo de voz '{os.path.basename(self._model_name)}'... (puede tardar unos segundos)")
             self.model = vosk.Model(self._model_name)
 
         def watch_theme(self, theme_name: str):
@@ -231,56 +264,70 @@ if TEXTUAL_AVAILABLE:
             except Exception:
                 pass
 
+        def _restart_audio(self):
+            mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
+            mics = list_microphones()
+            valid_indices = [m[0] for m in mics]
+            if mic_index in valid_indices:
+                self._start_audio(mic_index)
+                self.query_one("#log", RichLog).write("Audio reiniciado.")
+
         def _check_queue(self):
-            log = self.query_one("#log", RichLog)
-            partial_widget = self.query_one("#partial-text", Static)
+            try:
+                log = self.query_one("#log", RichLog)
+                partial_widget = self.query_one("#partial-text", Static)
 
-            while not self.audio_queue.empty():
-                msg = self.audio_queue.get_nowait()
-                if msg["type"] == "partial":
-                    partial_widget.update(msg["text"])
-                elif msg["type"] == "result":
-                    texto = msg["text"]
-                    texto_lower = texto.lower().strip()
+                while not self.audio_queue.empty():
+                    msg = self.audio_queue.get_nowait()
+                    if msg["type"] == "partial":
+                        partial_widget.update(msg["text"])
+                    elif msg["type"] == "result":
+                        texto = msg["text"]
+                        texto_lower = texto.lower().strip()
 
-                    if self.sleeping:
-                        respuesta = ejecutar_comando(texto, self)
-                        if respuesta:
-                            log.write(texto)
-                            log.write(respuesta)
-                    elif self.writing_mode:
-                        match = registry.match(texto_lower)
-                        if match and match[0].category == "sistema" and \
-                           any(p in match[0].patterns[0] for p in
-                               ["modo comandos", "modo normal", "salir de escritura"]):
-                            match[0].action(self, "")
-                            log.write(texto)
-                            log.write("Modo escritura desactivado.")
-                        else:
-                            write_text(texto)
-                            log.write(f"[Escritura] {texto}")
-                    else:
-                        match = registry.match(texto_lower)
-                        if match and match[0].category == "sistema" and \
-                           any(p in match[0].patterns[0] for p in ["modo escritura", "modo dictado"]):
-                            match[0].action(self, "")
-                            log.write(texto)
-                            log.write("Modo escritura activado.")
-                        else:
+                        if self.sleeping:
                             respuesta = ejecutar_comando(texto, self)
                             if respuesta:
                                 log.write(texto)
                                 log.write(respuesta)
+                        elif self.writing_mode:
+                            match = registry.match(texto_lower)
+                            if match and match[0].category == "sistema" and \
+                               any(p in match[0].patterns[0] for p in
+                                   ["modo comandos", "modo normal", "salir de escritura"]):
+                                match[0].action(self, "")
+                                log.write(texto)
+                                log.write("Modo escritura desactivado.")
+                            else:
+                                write_text(texto)
+                                log.write(f"[Escritura] {texto}")
+                        else:
+                            match = registry.match(texto_lower)
+                            if match and match[0].category == "sistema" and \
+                               any(p in match[0].patterns[0] for p in ["modo escritura", "modo dictado"]):
+                                match[0].action(self, "")
+                                log.write(texto)
+                                log.write("Modo escritura activado.")
+                            else:
+                                respuesta = ejecutar_comando(texto, self)
+                                if respuesta:
+                                    log.write(texto)
+                                    log.write(respuesta)
 
-                    partial_widget.update("")
-                elif msg["type"] == "status":
-                    if msg["text"] == "listening":
-                        self._update_status()
-                    else:
-                        self.query_one("#status-bar", Static).update(msg["text"])
-                elif msg["type"] == "error":
-                    log.write(f"ERROR: {msg['message']}")
-                    self.query_one("#status-bar", Static).update("Error en microfono")
+                        partial_widget.update("")
+                    elif msg["type"] == "status":
+                        if msg["text"] == "listening":
+                            self._update_status()
+                        else:
+                            self.query_one("#status-bar", Static).update(msg["text"])
+                    elif msg["type"] == "error":
+                        log.write(f"ERROR en audio: {msg['message']}. Reintentando...")
+                        self._restart_audio()
+            except Exception as exc:
+                import traceback
+                self.query_one("#log", RichLog).write(
+                    f"ERROR interno: {traceback.format_exc()}"
+                )
 
         def action_salir(self):
             self._save_disabled_state()
@@ -302,12 +349,7 @@ if TEXTUAL_AVAILABLE:
 
         def action_command_palette(self) -> None:
             if self.use_command_palette and not CommandPalette.is_open(self):
-                self.push_screen(
-                    CommandPalette(
-                        id="--command-palette",
-                        placeholder="micro, modelo, dormir, escritura, comandos...",
-                    )
-                )
+                self.push_screen(_CommandPalette(id="--command-palette"))
 
         def action_config_comandos(self):
             self.push_screen(CommandConfigScreen(), self._on_config_closed)
@@ -381,15 +423,21 @@ if TEXTUAL_AVAILABLE:
             self.query_one("#status-bar", Static).update(
                 f"Cargando {os.path.basename(abs_path)}..."
             )
-            self.call_later(self._finish_model_load, abs_path)
+            self.query_one("#log", RichLog).write(
+                f"Cambiando modelo a {os.path.basename(abs_path)}..."
+            )
+            asyncio.create_task(self._load_model_async(abs_path))
 
-        def _finish_model_load(self, model_path: str):
+        async def _load_model_async(self, model_path: str):
+            loop = asyncio.get_event_loop()
             try:
                 vosk.SetLogLevel(-1)
-                new_model = vosk.Model(model_path)
+                new_model = await loop.run_in_executor(None, vosk.Model, model_path)
             except Exception as e:
-                log = self.query_one("#log", RichLog)
-                log.write(f"ERROR: No se pudo cargar '{model_path}': {e}")
+                self.query_one("#log", RichLog).write(
+                    f"ERROR: No se pudo cargar '{model_path}': {e}"
+                )
+                self.query_one("#status-bar", Static).update("Error cargando modelo")
                 mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
                 self._start_audio(mic_index)
                 return
