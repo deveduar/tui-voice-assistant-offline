@@ -273,6 +273,8 @@ if TEXTUAL_AVAILABLE:
                 self.query_one("#log", RichLog).write("Audio reiniciado.")
 
         def _check_queue(self):
+            if getattr(self, '_exiting', False):
+                return
             try:
                 log = self.query_one("#log", RichLog)
                 partial_widget = self.query_one("#partial-text", Static)
@@ -330,6 +332,7 @@ if TEXTUAL_AVAILABLE:
                 )
 
         def action_salir(self):
+            self._exiting = True
             self._save_disabled_state()
             if self.audio_manager:
                 self.audio_manager.stop()

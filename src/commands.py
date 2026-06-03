@@ -96,7 +96,7 @@ def _cambiar_microfono(app, q):
 
 def _salir(app, q):
     if app:
-        app.call_later(app.action_salir)
+        app.action_salir()
     return "Cerrando asistente..."
 
 def _configurar_comandos(app, q):
