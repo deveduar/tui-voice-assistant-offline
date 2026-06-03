@@ -29,7 +29,7 @@ python main.py
 
 ### Primera ejecucion
 
-1. El asistente carga el modelo de voz (~40 MB).
+1. El asistente carga el modelo de voz (~40 MB) de forma asincrona (no bloquea la TUI).
 2. Si no hay `config.json` o el microfono guardado no es valido, se abre un menu TUI para seleccionar el microfono.
 3. La seleccion se guarda en `config.json` para usos posteriores.
 4. Comienza la escucha continua.
@@ -60,7 +60,7 @@ si no, cae automaticamente al modo texto.
 +------------------------------------------+
 |  Escuchando... [small-es-0.42]            |  <- Status bar (incluye modelo)
 +------------------------------------------+
-|  [Q] Salir  [M] Menu Comandos            |  <- Footer
+|  [Q] Salir  [M] Menu  [Ctrl+P] Paleta    |  <- Footer
 +------------------------------------------+
 ```
 
@@ -70,10 +70,25 @@ si no, cae automaticamente al modo texto.
 |-------|--------|
 | `Q` | Salir del asistente |
 | `M` | Abrir Menu Comandos (activar/desactivar comandos) |
-| `M` | Abrir Menu Comandos (activar/desactivar comandos) |
-| `Ctrl+P` | Abrir paleta de comandos (micro, modelo, dormir, escritura, ...) |
+| `Ctrl+P` | Abrir paleta de comandos (microfono, modelo, dormir, escritura, ...) |
 | `Enter` | (en Menu Comandos) Activar/desactivar comando |
 | `Escape` | Salir del Menu Comandos (guarda cambios) |
+
+### Paleta de comandos (Ctrl+P)
+
+La paleta de comandos permite acceder rapidamente a funciones sin usar teclas dedicadas.
+Usa un `Input` con placeholder customizado que muestra las opciones disponibles.
+Los comandos aparecen agrupados por keyword de busqueda:
+
+- **micro**: cambiar microfono activo
+- **modelo**: cambiar modelo de voz (grande/pequeno)
+- **modo**: dormir / despertar / modo escritura / modo comandos
+- **escritura**: activar/desactivar dictado
+- **comandos**: configurar comandos
+- **asistente**: salir del asistente
+- **configurar**: abrir configuracion de comandos
+
+Al abrirla con `Ctrl+P` escribe para filtrar entre las opciones.
 
 ## Nombre del asistente (wake word)
 
@@ -91,13 +106,26 @@ Los comandos de dormir/despertar **siempre requieren** el nombre del asistente.
 ## Modo escritura (dictado)
 
 Activa el modo escritura con **"modo escritura"** / **"modo dictado"**.
-En este modo, todo lo que digas se escribe automaticamente en la ventana activa
-(usa portapapeles + Ctrl+V). Ideal para tomar notas, escribir documentos, etc.
+En este modo, todo lo que digas se escribe automaticamente en la ventana activa.
 
 - Entrar: "modo escritura", "modo dictado", o desde `Ctrl+P`
-- Salir: "modo comandos", "modo normal", o desde `Ctrl+P`
+- Salir: "modo comandos", "modo normal", "salir de escritura", o desde `Ctrl+P`
 - La barra de estado muestra "Escribiendo..." cuando esta activo
 - Cada frase dictada se registra en el log con el prefijo `[Escritura]`
+
+### Metodo de escritura
+
+Usa `SendInput` con `KEYEVENTF_UNICODE` para inyectar cada caracter directamente
+en la ventana con foco, sin usar portapapeles. Esto funciona en cualquier
+aplicacion que acepte entrada de teclado (Bloc de Notas, Obsidian, navegadores, etc.).
+
+Las funciones Win32 tienen `argtypes` y `restype` declarados para convencion
+de llamada correcta en x64. La estructura `INPUT` usa un `Union` completo
+(`MOUSEINPUT` | `KEYBDINPUT` | `HARDWAREINPUT`) de 40 bytes, igualando
+el layout que espera la API de Windows.
+
+Funciones auxiliares de portapapeles (`SetClipboardData` + `Ctrl+V`) se
+mantienen como fallback pero no se usan en el flujo principal.
 
 ## Modo dormir / despertar
 
@@ -106,18 +134,6 @@ En este modo, todo lo que digas se escribe automaticamente en la ventana activa
 - **"[nombre] despierta"** — vuelve al modo normal.
 - Tambien se puede desde `Ctrl+P` en la paleta de comandos.
 - Siempre requieren el nombre del asistente (ej: "flex duerme").
-
-## Paleta de comandos (Ctrl+P)
-
-La paleta de comandos permite acceder rapidamente a funciones sin usar teclas dedicadas:
-
-- **Microfono**: cambiar microfono activo
-- **Modelo**: cambiar modelo de voz (grande/pequeno)
-- **Dormir / Despertar**: poner en reposo o activar
-- **Modo escritura / Modo comandos**: activar/desactivar dictado
-- **Configurar comandos**: abrir Menu Comandos
-
-Al abrirla con `Ctrl+P` muestra un placeholder con las opciones disponibles. Escribe para filtrar.
 
 ## Seleccion de modelo de voz
 
@@ -129,7 +145,9 @@ Modelos disponibles:
 - `vosk-model-small-es-0.42` (~40 MB, rapido, defecto)
 - `vosk-model-es-0.42` (~1.5 GB, mas preciso)
 
-El cambio de modelo ocurre en caliente: para el audio, carga el nuevo modelo y reanuda.
+El cambio de modelo ocurre en caliente: detiene el audio, carga el nuevo modelo
+de forma asincrona (`run_in_executor`), muestra "Cargando..." en la barra de
+estado, y reanuda al terminar.
 
 ## Comandos de voz
 
@@ -171,6 +189,15 @@ Requiere [GlazeWM](https://github.com/glazerdesktop/GlazeWM) instalado y `glazew
 | "pausar glaze" / "reanudar glaze" | Pausa/reanuda la gestion de ventanas |
 | "recargar config" / "recargar configuracion" | Recarga config de GlazeWM |
 
+### Sistema
+
+| Comando | Accion |
+|---------|--------|
+| "[nombre] duerme" / "[nombre] dormir" | Pone el asistente en reposo |
+| "[nombre] despierta" / "[nombre] despertar" | Activa el asistente |
+| "modo escritura" / "modo dictado" | Activa modo dictado |
+| "modo comandos" / "modo normal" / "salir de escritura" | Desactiva modo dictado |
+
 ### Lanzadores personalizados
 
 Los programas se configuran en `config.json` bajo `custom_launchers`. Valores por defecto:
@@ -194,8 +221,22 @@ Puedes anadir o modificar entradas editando `config.json`.
 Cada comando tiene un campo `enabled`. Los comandos desactivados no
 se ejecutan y se muestran en el Menu Comandos con la marca "✘".
 
-El estado de los comandos desactivados se guarda en `config.json`
-(disabled_commands) y persiste entre sesiones.
+El estado de los comandos desactivados:
+- Se guarda en `config.json` (`disabled_commands`)
+- Persiste entre sesiones
+- Al hablar un comando desactivado se muestra "Comando deshabilitado: [descripcion]"
+- `match_disabled()` se ejecuta antes que `registry.match()` para detectarlos
+
+## Menu Comandos (M)
+
+El Menu Comandos (`M` o "configurar comandos" por voz) muestra todos los comandos
+disponibles con su estado (activado/desactivado). Sirve para:
+
+- Ver la lista completa de comandos
+- Activar o desactivar comandos individualmente
+- Persistir los cambios en `config.json`
+
+Protege contra apertura duplicada: si ya esta abierto, no se apila otra instancia.
 
 ## Configuracion
 
@@ -261,10 +302,10 @@ audio-vosk/
 +-- .gitignore
 +-- src/
     +-- __init__.py
-    +-- config.py                  # Carga/guarda config.json
+    +-- config.py                  # Carga/guarda config.json, resuelve rutas absolutas
     +-- audio.py                   # AudioManager (hilo + cola) + listar microfonos
     +-- commands.py                # CommandRegistry + definicion de comandos
-    +-- writer.py                  # Portapapeles + Ctrl+V para modo escritura
+    +-- writer.py                  # SendInput + KEYEVENTF_UNICODE (solo ctypes)
     +-- ui/
         +-- __init__.py
         +-- app.py                 # VoiceAssistantApp (Textual) + run()
@@ -272,12 +313,23 @@ audio-vosk/
         +-- fallback.py            # Modo texto sin Textual
 ```
 
-## Notas
+## Notas tecnicas
 
-- Los comandos de apagado del sistema estan comentados en `src/commands.py`
-por seguridad. Descomentalos si los necesitas.
-- Los comandos de GlazeWM requieren que `glazewm.exe` este en el PATH del sistema.
-- Los archivos `__init__.py` permiten que Python trate `src/` y `src/ui/`
-como paquetes, habilitando los imports relativos (ej: `from ..audio import ...`).
-- El modo escritura usa solo `ctypes` (biblioteca estandar de Python) —
-no necesita librerias adicionales.
+- **Salida limpia**: el flag `_exiting` evita que `_check_queue` se ejecute
+  despues de que se solicito la salida. `_salir` llama a `app.action_salir()`
+  directamente sin `call_later`, restaurando el mouse tracking del terminal.
+- **Robustez de audio**: `_check_queue` esta envuelto en `try/except`. Si el
+  hilo de audio falla, `AudioManager` se reinicia automaticamente.
+- **Lanzamiento no bloqueante**: `os.system()` reemplazado por `subprocess.Popen()`
+  en todos los lanzadores (`_abrir_notepad`, `_abrir_calc`, `_abrir_terminal`)
+  para no bloquear el event loop.
+- **Validacion de programas**: `_abrir_programa` usa `shutil.which()` antes de
+  lanzar, evitando errores silenciosos.
+- **Escritura**: usa exclusivamente `ctypes` (sin librerias de terceros).
+  `SendInput` con `KEYEVENTF_UNICODE` inyecta caracter a caracter.
+  La estructura `INPUT` usa un `Union` completo con `MOUSEINPUT`, `KEYBDINPUT`
+  y `HARDWAREINPUT` para igualar el layout de 40 bytes que espera Windows x64.
+- **Rutas absolutas**: todas las rutas se resuelven contra `PROJECT_ROOT` con
+  `resolve_model_path()` y `scan_models()`, robusto contra cambios de directorio
+  de trabajo.
+- **Comandos GlazeWM**: requieren que `glazewm.exe` este en el PATH del sistema.

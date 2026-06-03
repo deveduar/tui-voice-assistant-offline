@@ -1,0 +1,40 @@
+2026-06-03 22:39:04,346 write_text text='flex duerme' len=11
+2026-06-03 22:39:04,347 foreground hwnd=264472 class=CASCADIA_HOSTING_WINDOW_CLASS title=audio-vosk
+2026-06-03 22:39:04,347 SendMessageW WM_CHAR returned 0 at char 0 'f'
+2026-06-03 22:39:04,347 write_text SendMessageW failed, falling back to clipboard paste
+2026-06-03 22:39:04,348 clipboard OK wrote 11 chars
+2026-06-03 22:39:04,351 SendInput OK ret=1 err=0
+2026-06-03 22:39:04,353 SendInput OK ret=1 err=0
+2026-06-03 22:39:04,353 SendInput OK ret=1 err=0
+2026-06-03 22:39:04,354 SendInput OK ret=1 err=0
+2026-06-03 22:39:04,354 clipboard paste sent 11 chars
+2026-06-03 22:39:12,346 write_text text='qué tal estás' len=13
+2026-06-03 22:39:12,346 foreground hwnd=264472 class=CASCADIA_HOSTING_WINDOW_CLASS title=audio-vosk
+2026-06-03 22:39:12,346 SendMessageW WM_CHAR returned 0 at char 0 'q'
+2026-06-03 22:39:12,346 write_text SendMessageW failed, falling back to clipboard paste
+2026-06-03 22:39:12,347 clipboard OK wrote 13 chars
+2026-06-03 22:39:12,349 SendInput OK ret=1 err=0
+2026-06-03 22:39:12,350 SendInput OK ret=1 err=0
+2026-06-03 22:39:12,351 SendInput OK ret=1 err=0
+2026-06-03 22:39:12,351 SendInput OK ret=1 err=0
+2026-06-03 22:39:12,351 clipboard paste sent 13 chars
+2026-06-03 22:39:17,846 write_text text='menú comandos' len=13
+2026-06-03 22:39:17,846 foreground hwnd=264472 class=CASCADIA_HOSTING_WINDOW_CLASS title=audio-vosk
+2026-06-03 22:39:17,846 SendMessageW WM_CHAR returned 0 at char 0 'm'
+2026-06-03 22:39:17,846 write_text SendMessageW failed, falling back to clipboard paste
+2026-06-03 22:39:17,847 clipboard OK wrote 13 chars
+2026-06-03 22:39:17,848 SendInput OK ret=1 err=0
+2026-06-03 22:39:17,851 SendInput OK ret=1 err=0
+2026-06-03 22:39:17,851 SendInput OK ret=1 err=0
+2026-06-03 22:39:17,852 SendInput OK ret=1 err=0
+2026-06-03 22:39:17,852 clipboard paste sent 13 chars
+2026-06-03 22:39:27,847 write_text text='ahora no debe de haber ningún problema mientras ha' len=67
+2026-06-03 22:39:27,847 foreground hwnd=262200 class=Chrome_WidgetWin_1 title=Nueva pestaña y 22 páginas más - Personal: Microsoft​ Edge
+2026-06-03 22:39:27,864 SendMessageW WM_CHAR returned 0 at char 0 'a'
+2026-06-03 22:39:27,864 write_text SendMessageW failed, falling back to clipboard paste
+2026-06-03 22:39:27,864 clipboard OK wrote 67 chars
+2026-06-03 22:39:27,866 SendInput OK ret=1 err=0
+2026-06-03 22:39:27,867 SendInput OK ret=1 err=0
+2026-06-03 22:39:27,867 SendInput OK ret=1 err=0
+2026-06-03 22:39:27,868 SendInput OK ret=1 err=0
+2026-06-03 22:39:27,868 clipboard paste sent 67 chars

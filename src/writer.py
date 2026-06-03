@@ -10,11 +10,11 @@ handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
+WM_CHAR = 0x0102
 VK_CONTROL = 0x11
 VK_V = 0x56
 KEYEVENTF_KEYDOWN = 0
 KEYEVENTF_KEYUP = 2
-KEYEVENTF_UNICODE = 0x0004
 INPUT_KEYBOARD = 1
 CF_UNICODETEXT = 13
 GMEM_MOVABLE = 0x0002
@@ -76,6 +76,8 @@ user32.GetWindowTextW.argtypes = [wintypes.HWND, ctypes.c_wchar_p, ctypes.c_int]
 user32.GetWindowTextW.restype = ctypes.c_int
 user32.GetClassNameW.argtypes = [wintypes.HWND, ctypes.c_wchar_p, ctypes.c_int]
 user32.GetClassNameW.restype = ctypes.c_int
+user32.SendMessageW.argtypes = [wintypes.HANDLE, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+user32.SendMessageW.restype = ctypes.c_ssize_t
 kernel32.GetLastError.argtypes = []
 kernel32.GetLastError.restype = wintypes.DWORD
 
@@ -118,14 +120,6 @@ def _send_input(inp):
     return ret
 
 
-def _send_unicode(ch):
-    code = ord(ch)
-    inp_down = INPUT(INPUT_KEYBOARD, _INPUT_UNION(ki=KEYBDINPUT(0, code, KEYEVENTF_UNICODE, 0, 0)))
-    inp_up = INPUT(INPUT_KEYBOARD, _INPUT_UNION(ki=KEYBDINPUT(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0, 0)))
-    _send_input(inp_down)
-    _send_input(inp_up)
-
-
 def _paste_clipboard():
     inp_down_ctl = INPUT(INPUT_KEYBOARD, _INPUT_UNION(ki=KEYBDINPUT(VK_CONTROL, 0, KEYEVENTF_KEYDOWN, 0, 0)))
     inp_down_v = INPUT(INPUT_KEYBOARD, _INPUT_UNION(ki=KEYBDINPUT(VK_V, 0, KEYEVENTF_KEYDOWN, 0, 0)))
@@ -164,21 +158,41 @@ def _set_clipboard(text):
     return True
 
 
+def _write_via_message(hwnd, text):
+    for i, ch in enumerate(text):
+        ret = user32.SendMessageW(hwnd, WM_CHAR, ord(ch), 0)
+        if ret == 0:
+            logger.debug("SendMessageW WM_CHAR returned 0 at char %d '%s'", i, ch)
+            return False
+        if i == 0:
+            logger.debug("SendMessageW first char OK")
+    logger.debug("SendMessageW sent %d chars OK", len(text))
+    return True
+
+
+def _write_via_paste(text):
+    if not _set_clipboard(text):
+        return False
+    _paste_clipboard()
+    logger.debug("clipboard paste sent %d chars", len(text))
+    return True
+
+
 def write_text(text):
     if sys.platform != "win32":
         logger.debug("write_text not win32, skip")
         return False
 
     logger.debug("write_text text='%s' len=%d", text[:50], len(text))
-    logger.debug("write_text sizeof(INPUT)=%d", ctypes.sizeof(INPUT))
 
     hwnd = _debug_foreground()
+    if not hwnd:
+        logger.debug("write_text no foreground window, skip")
+        return False
 
-    for i, ch in enumerate(text):
-        _send_unicode(ch)
-        if i == 0:
-            logger.debug("write_text first char sent, re-checking foreground...")
-            _debug_foreground()
+    if _write_via_message(hwnd, text):
+        logger.debug("write_text done via SendMessageW")
+        return True
 
-    logger.debug("write_text done")
-    return True
+    logger.debug("write_text SendMessageW failed, falling back to clipboard paste")
+    return _write_via_paste(text)

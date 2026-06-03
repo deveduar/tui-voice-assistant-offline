@@ -1,8 +1,15 @@
+import logging
 import os
 import sys
 import queue
 import asyncio
 from functools import partial
+
+logger = logging.getLogger("app")
+_handler = logging.FileHandler("app_debug.log", mode="w", encoding="utf-8")
+_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+logger.addHandler(_handler)
+logger.setLevel(logging.DEBUG)
 
 import vosk
 
@@ -294,13 +301,18 @@ if TEXTUAL_AVAILABLE:
                                 log.write(respuesta)
                         elif self.writing_mode:
                             match = registry.match(texto_lower)
+                            logger.debug("writing_mode raw='%s' match=%s", texto, match[0].patterns[0] if match else "None")
                             if match and match[0].category == "sistema" and \
                                any(p in match[0].patterns[0] for p in
                                    ["modo comandos", "modo normal", "salir de escritura"]):
+                                logger.debug("writing_mode BRANCH=exit pattern=%s", match[0].patterns[0])
                                 match[0].action(self, "")
                                 log.write(texto)
                                 log.write("Modo escritura desactivado.")
                             else:
+                                logger.debug("writing_mode BRANCH=write_text match_cat=%s match_pat=%s",
+                                             match[0].category if match else "None",
+                                             match[0].patterns[0] if match else "None")
                                 write_text(texto)
                                 log.write(f"[Escritura] {texto}")
                         else:
