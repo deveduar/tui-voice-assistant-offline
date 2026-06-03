@@ -61,8 +61,17 @@ def run():
 
 
 if TEXTUAL_AVAILABLE:
+    from textual.theme import BUILTIN_THEMES
+
+    _THEMES_SORTED = sorted(BUILTIN_THEMES.keys())
 
     class VoiceAssistantCommands(Provider):
+        def _yield_themes(self, app, score=60):
+            for tname in _THEMES_SORTED:
+                yield Hit(score, f"Tema: {tname}",
+                          partial(app.action_palette_theme, tname),
+                          "Cambiar tema de la interfaz")
+
         async def search(self, query: str):
             app = self.app
             q = query.lower()
@@ -87,6 +96,8 @@ if TEXTUAL_AVAILABLE:
                 yield Hit(40, "Dormir asistente", app.action_dormir, "Poner en reposo")
                 yield Hit(41, "Despertar asistente", app.action_despertar, "Activar del reposo")
                 yield Hit(50, "Configurar comandos", app.action_config_comandos, "Abrir configuracion")
+                for hit in self._yield_themes(app, 60):
+                    yield hit
                 return
 
             if "micro" in q or "mic" in q:
@@ -112,6 +123,11 @@ if TEXTUAL_AVAILABLE:
                 yield Hit(31, "Modo comandos",
                           partial(app._toggle_writing_from_palette, False),
                           "Desactivar dictado")
+                return
+
+            if any(kw in q for kw in ["tema", "theme", "color", "tema oscuro", "tema claro"]):
+                for hit in self._yield_themes(app, 60):
+                    yield hit
                 return
 
             if "escritura" in q or "dictado" in q:
@@ -140,7 +156,7 @@ if TEXTUAL_AVAILABLE:
     class _CommandPalette(CommandPalette):
         def on_mount(self) -> None:
             try:
-                self.query_one("Input").placeholder = "micro, modelo, modo, escritura, comandos, asistente, configurar..."
+                self.query_one("Input").placeholder = "micro, modelo, modo, tema, escritura, comandos, asistente, configurar..."
             except Exception:
                 pass
 
@@ -425,6 +441,12 @@ if TEXTUAL_AVAILABLE:
         def _on_mic_picked(self, mic_index):
             if mic_index is not None:
                 self.action_palette_mic(mic_index)
+
+        def action_palette_theme(self, theme_name: str):
+            if theme_name == self.theme:
+                return
+            self.theme = theme_name
+            self.query_one("#log", RichLog).write(f"Tema cambiado a {theme_name}.")
 
         def action_palette_model(self, model_name: str):
             abs_path = os.path.abspath(model_name)
