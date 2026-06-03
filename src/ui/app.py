@@ -355,6 +355,8 @@ if TEXTUAL_AVAILABLE:
                 self.push_screen(_CommandPalette(id="--command-palette"))
 
         def action_config_comandos(self):
+            if any(isinstance(s, CommandConfigScreen) for s in self.screen_stack):
+                return
             self.push_screen(CommandConfigScreen(), self._on_config_closed)
 
         def _on_config_closed(self, dirty: bool = False):
