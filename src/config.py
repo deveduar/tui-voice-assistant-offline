@@ -1,8 +1,9 @@
 import os
 import json
 
-MODEL_PATH = "vosk-model-small-es-0.42"
-CONFIG_PATH = "config.json"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(PROJECT_ROOT, "vosk-model-small-es-0.42")
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 DEFAULT_MIC_INDEX = 1
 DEFAULT_MODEL_NAME = "vosk-model-small-es-0.42"
 DEFAULT_ASSISTANT_NAME = "flex"
@@ -26,16 +27,21 @@ DEFAULT_LAUNCHERS = {
 }
 
 
+def resolve_model_path(name: str) -> str:
+    if os.path.isabs(name):
+        return name
+    return os.path.join(PROJECT_ROOT, name)
+
 def scan_models():
     try:
-        entries = os.listdir(".")
+        entries = os.listdir(PROJECT_ROOT)
         models = sorted(
             d for d in entries
-            if d.startswith("vosk-model-") and os.path.isdir(d)
+            if d.startswith("vosk-model-") and os.path.isdir(os.path.join(PROJECT_ROOT, d))
         )
-        return models if models else [DEFAULT_MODEL_NAME]
+        return [os.path.join(PROJECT_ROOT, d) for d in models] if models else [resolve_model_path(DEFAULT_MODEL_NAME)]
     except OSError:
-        return [DEFAULT_MODEL_NAME]
+        return [resolve_model_path(DEFAULT_MODEL_NAME)]
 
 
 def load_config():

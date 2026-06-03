@@ -15,6 +15,7 @@ class Command:
     needs_query: bool = False
     enabled: bool = True
     category: str = "general"
+    always_requires_name: bool = False
 
 
 class CommandRegistry:
@@ -275,6 +276,7 @@ registry.add(Command(
     description="Cierra el asistente de voz",
     category="general",
     action=_salir,
+    always_requires_name=True,
 ))
 
 registry.add(Command(
@@ -517,6 +519,13 @@ def ejecutar_comando(text: str, app=None) -> str:
 
     if sleeping:
         return ""
+
+    if cmd.always_requires_name:
+        if not has_prefix:
+            if sleeping:
+                return ""
+            name = assistant_name or "flex"
+            return f"Di '{name} {cmd.patterns[0]}' para {cmd.description.lower()}."
 
     if require_name and not has_prefix:
         return ""

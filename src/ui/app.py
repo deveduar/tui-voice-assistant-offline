@@ -9,6 +9,7 @@ from ..config import (
     MODEL_PATH, DEFAULT_MIC_INDEX,
     DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME,
     get_config, save_config, scan_models,
+    PROJECT_ROOT, resolve_model_path,
 )
 from ..audio import AudioManager, list_microphones
 from ..commands import ejecutar_comando, registry
@@ -19,9 +20,10 @@ try:
     from textual.widgets import Header, Footer, RichLog, Static
     from textual.containers import Container
     try:
-        from textual.command import Provider, Hit
+        from textual.command import Provider, Hit, CommandPalette
     except ImportError:
         Provider = None
+        CommandPalette = None
     from .screens import CommandConfigScreen
     TEXTUAL_AVAILABLE = True
 except ImportError:
@@ -30,9 +32,10 @@ except ImportError:
 
 def run():
     models = scan_models()
-    model_name = get_config().get("model_name", MODEL_PATH)
+    raw = get_config().get("model_name", MODEL_PATH)
+    model_name = resolve_model_path(raw)
     if model_name not in models:
-        model_name = models[0] if models else MODEL_PATH
+        model_name = models[0] if models else resolve_model_path(MODEL_PATH)
     if not os.path.exists(model_name):
         print(f"ERROR: No se encuentra la carpeta del modelo en '{model_name}'")
         print("Modelos disponibles:", ", ".join(models))
@@ -52,10 +55,6 @@ def run():
 if TEXTUAL_AVAILABLE:
 
     class VoiceAssistantCommands(Provider):
-        @property
-        def placeholder(self) -> str:
-            return "micro, modelo, dormir, escritura, comandos..."
-
         async def search(self, query: str):
             app = self.app
             q = query.lower()
@@ -73,9 +72,10 @@ if TEXTUAL_AVAILABLE:
             if not q or "modelo" in q or "model" in q:
                 models = scan_models()
                 for mname in models:
+                    short = os.path.basename(mname)
                     yield Hit(
                         20,
-                        mname,
+                        short,
                         partial(app.action_palette_model, mname),
                         "Usar este modelo de voz",
                     )
@@ -148,8 +148,10 @@ if TEXTUAL_AVAILABLE:
             cfg_name = self.config.get("assistant_name", DEFAULT_ASSISTANT_NAME)
             self.assistant_name = cfg_name.strip().lower()
             self.require_name = self.config.get("require_name", DEFAULT_REQUIRE_NAME)
-            self._model_name = self.config.get("model_name", MODEL_PATH)
+            raw = self.config.get("model_name", MODEL_PATH)
+            self._model_name = resolve_model_path(raw)
 
+            vosk.SetLogLevel(-1)
             print("Cargando modelo de voz... (esto puede tardar unos segundos)")
             self.model = vosk.Model(self._model_name)
 
@@ -211,7 +213,7 @@ if TEXTUAL_AVAILABLE:
                 mic_index, self.model, self.audio_queue
             )
             self.audio_manager.start()
-            model_short = self._model_name.replace("vosk-model-", "").replace("-es-", "-")
+            model_short = os.path.basename(self._model_name).replace("vosk-model-", "").replace("-es-", "-")
             self.query_one("#status-bar", Static).update(
                 f"Microfono [{mic_index}] activo [{model_short}]"
             )
@@ -219,7 +221,7 @@ if TEXTUAL_AVAILABLE:
         def _update_status(self):
             try:
                 status = self.query_one("#status-bar", Static)
-                model_short = self._model_name.replace("vosk-model-", "").replace("-es-", "-")
+                model_short = os.path.basename(self._model_name).replace("vosk-model-", "").replace("-es-", "-")
                 if self.sleeping:
                     status.update(f"Dormido [{model_short}]")
                 elif self.writing_mode:
@@ -298,6 +300,15 @@ if TEXTUAL_AVAILABLE:
             self._update_status()
             self.query_one("#partial-text", Static).update("")
 
+        def action_command_palette(self) -> None:
+            if self.use_command_palette and not CommandPalette.is_open(self):
+                self.push_screen(
+                    CommandPalette(
+                        id="--command-palette",
+                        placeholder="micro, modelo, dormir, escritura, comandos...",
+                    )
+                )
+
         def action_config_comandos(self):
             self.push_screen(CommandConfigScreen(), self._on_config_closed)
 
@@ -357,32 +368,37 @@ if TEXTUAL_AVAILABLE:
                 self.action_palette_mic(mic_index)
 
         def action_palette_model(self, model_name: str):
+            abs_path = os.path.abspath(model_name)
             current = self.config.get("model_name")
-            if model_name == current:
+            if abs_path == current:
                 return
             if self.audio_manager:
                 self.audio_manager.stop()
                 self.audio_manager = None
+            self.config["model_name"] = abs_path
+            save_config(self.config)
+            self._model_name = abs_path
+            self.query_one("#status-bar", Static).update(
+                f"Cargando {os.path.basename(abs_path)}..."
+            )
+            self.call_later(self._finish_model_load, abs_path)
+
+        def _finish_model_load(self, model_path: str):
             try:
-                print(f"Cargando modelo: {model_name}")
-                new_model = vosk.Model(model_name)
+                vosk.SetLogLevel(-1)
+                new_model = vosk.Model(model_path)
             except Exception as e:
                 log = self.query_one("#log", RichLog)
-                log.write(f"ERROR: No se pudo cargar '{model_name}': {e}")
-                log.write("Revirtiendo al modelo anterior.")
-                self.config["model_name"] = current
-                save_config(self.config)
+                log.write(f"ERROR: No se pudo cargar '{model_path}': {e}")
                 mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
-                if self.audio_manager:
-                    self._start_audio(mic_index)
+                self._start_audio(mic_index)
                 return
-            self.config["model_name"] = model_name
-            save_config(self.config)
-            self._model_name = model_name
             self.model = new_model
             mic_index = self.config.get("mic_index", DEFAULT_MIC_INDEX)
             self._start_audio(mic_index)
-            self.query_one("#log", RichLog).write(f"Modelo cambiado a {model_name}.")
+            self.query_one("#log", RichLog).write(
+                f"Modelo cambiado a {os.path.basename(model_path)}."
+            )
 
         def _toggle_writing_from_palette(self, on: bool):
             self.writing_mode = on
