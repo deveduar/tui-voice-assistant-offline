@@ -1,0 +1,419 @@
+[
+  {
+    "patterns": ["abrir bloc de notas", "abrir notepad"],
+    "description": "Abre el Bloc de Notas de Windows",
+    "category": "general",
+    "action": "programa",
+    "program": "notepad"
+  },
+  {
+    "patterns": ["abrir calculadora", "abrir calc"],
+    "description": "Abre la Calculadora de Windows",
+    "category": "general",
+    "action": "programa",
+    "program": "calc"
+  },
+  {
+    "patterns": ["abrir navegador", "abrir internet"],
+    "description": "Abre el navegador en Google",
+    "category": "general",
+    "action": "url",
+    "url": "https://www.google.com"
+  },
+  {
+    "patterns": ["buscar en google"],
+    "description": "Busca un termino en Google",
+    "category": "general",
+    "action": "url",
+    "url": "https://www.google.com/search?q={query}",
+    "needs_query": true
+  },
+  {
+    "patterns": ["cambiar microfono", "cambiar micrófono"],
+    "description": "Cambia el microfono activo",
+    "category": "general",
+    "action": "cambiar_micro"
+  },
+  {
+    "patterns": ["salir", "adios", "adiós", "cerrar asistente"],
+    "description": "Cierra el asistente de voz",
+    "category": "general",
+    "action": "salir",
+    "always_requires_name": true
+  },
+  {
+    "patterns": ["configurar comandos", "gestionar comandos", "personalizar comandos"],
+    "description": "Abre la pantalla para activar/desactivar comandos",
+    "category": "general",
+    "action": "config_comandos"
+  },
+  {
+    "patterns": ["abrir terminal", "abrir cmd"],
+    "description": "Abre la terminal de Windows",
+    "category": "glazewm",
+    "action": "programa",
+    "program": "wt"
+  },
+  {
+    "patterns": ["cerrar ventana"],
+    "description": "Cierra la ventana activa en GlazeWM",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["close"]
+  },
+  {
+    "patterns": ["siguiente escritorio", "siguiente"],
+    "description": "Va al siguiente escritorio virtual",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--next-active-workspace"]
+  },
+  {
+    "patterns": ["anterior escritorio", "anterior"],
+    "description": "Va al anterior escritorio virtual",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--prev-active-workspace"]
+  },
+  {
+    "patterns": ["ultimo escritorio", "volver", "escritorio anterior"],
+    "description": "Vuelve al ultimo escritorio activo",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--recent-workspace"]
+  },
+  {
+    "patterns": ["maximizar ventana", "maximizar"],
+    "description": "Pone la ventana activa en pantalla completa",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["toggle-fullscreen"]
+  },
+  {
+    "patterns": ["minimizar ventana", "minimizar"],
+    "description": "Minimiza la ventana activa",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["toggle-minimized"]
+  },
+  {
+    "patterns": ["hacer flotante", "flotar ventana"],
+    "description": "Cambia la ventana activa a modo flotante",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["toggle-floating", "--centered"]
+  },
+  {
+    "patterns": ["hacer fija", "fijar ventana", "hacer tiling"],
+    "description": "Cambia la ventana activa a modo fijo",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["toggle-tiling"]
+  },
+  {
+    "patterns": ["recargar config", "recargar configuracion"],
+    "description": "Recarga la configuracion de GlazeWM",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["reload-config"]
+  },
+  {
+    "patterns": ["ciclar foco", "siguiente ventana", "ciclar ventana"],
+    "description": "Cambia el foco entre ventanas flotantes y ancladas",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["wm-cycle-focus"]
+  },
+  {
+    "patterns": ["cambiar direccion", "cambiar direccion tiling"],
+    "description": "Cambia la direccion de insercion de nuevas ventanas",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["toggle-tiling-direction"]
+  },
+  {
+    "patterns": ["redibujar", "refrescar ventanas"],
+    "description": "Redibuja todas las ventanas en GlazeWM",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["wm-redraw"]
+  },
+  {
+    "patterns": ["pausar glaze", "pausar ventanas", "reanudar glaze"],
+    "description": "Pausa o reanuda la gestion de ventanas de GlazeWM",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["wm-toggle-pause"]
+  },
+  {
+    "patterns": ["enfocar izquierda", "enfoque izquierda"],
+    "description": "Enfoca la ventana a la izquierda",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--direction", "left"]
+  },
+  {
+    "patterns": ["enfocar derecha", "enfoque derecha"],
+    "description": "Enfoca la ventana a la derecha",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--direction", "right"]
+  },
+  {
+    "patterns": ["enfocar arriba", "enfoque arriba"],
+    "description": "Enfoca la ventana hacia arriba",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--direction", "up"]
+  },
+  {
+    "patterns": ["enfocar abajo", "enfoque abajo"],
+    "description": "Enfoca la ventana hacia abajo",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--direction", "down"]
+  },
+  {
+    "patterns": ["mover izquierda", "desplazar izquierda"],
+    "description": "Mueve la ventana activa a la izquierda",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--direction", "left"]
+  },
+  {
+    "patterns": ["mover derecha", "desplazar derecha"],
+    "description": "Mueve la ventana activa a la derecha",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--direction", "right"]
+  },
+  {
+    "patterns": ["mover arriba", "desplazar arriba"],
+    "description": "Mueve la ventana activa hacia arriba",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--direction", "up"]
+  },
+  {
+    "patterns": ["mover abajo", "desplazar abajo"],
+    "description": "Mueve la ventana activa hacia abajo",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--direction", "down"]
+  },
+  {
+    "patterns": ["ir al escritorio 1", "escritorio 1", "ir al escritorio uno", "escritorio uno"],
+    "description": "Ir al escritorio virtual 1",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "1"]
+  },
+  {
+    "patterns": ["ir al escritorio 2", "escritorio 2", "ir al escritorio dos", "escritorio dos"],
+    "description": "Ir al escritorio virtual 2",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "2"]
+  },
+  {
+    "patterns": ["ir al escritorio 3", "escritorio 3", "ir al escritorio tres", "escritorio tres"],
+    "description": "Ir al escritorio virtual 3",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "3"]
+  },
+  {
+    "patterns": ["ir al escritorio 4", "escritorio 4", "ir al escritorio cuatro", "escritorio cuatro"],
+    "description": "Ir al escritorio virtual 4",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "4"]
+  },
+  {
+    "patterns": ["ir al escritorio 5", "escritorio 5", "ir al escritorio cinco", "escritorio cinco"],
+    "description": "Ir al escritorio virtual 5",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "5"]
+  },
+  {
+    "patterns": ["ir al escritorio 6", "escritorio 6", "ir al escritorio seis", "escritorio seis"],
+    "description": "Ir al escritorio virtual 6",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "6"]
+  },
+  {
+    "patterns": ["ir al escritorio 7", "escritorio 7", "ir al escritorio siete", "escritorio siete"],
+    "description": "Ir al escritorio virtual 7",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "7"]
+  },
+  {
+    "patterns": ["ir al escritorio 8", "escritorio 8", "ir al escritorio ocho", "escritorio ocho"],
+    "description": "Ir al escritorio virtual 8",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "8"]
+  },
+  {
+    "patterns": ["ir al escritorio 9", "escritorio 9", "ir al escritorio nueve", "escritorio nueve"],
+    "description": "Ir al escritorio virtual 9",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["focus", "--workspace", "9"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 1", "mover al escritorio 1", "mover ventana al escritorio uno", "mover al escritorio uno"],
+    "description": "Mueve la ventana activa al escritorio virtual 1",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "1"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 2", "mover al escritorio 2", "mover ventana al escritorio dos", "mover al escritorio dos"],
+    "description": "Mueve la ventana activa al escritorio virtual 2",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "2"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 3", "mover al escritorio 3", "mover ventana al escritorio tres", "mover al escritorio tres"],
+    "description": "Mueve la ventana activa al escritorio virtual 3",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "3"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 4", "mover al escritorio 4", "mover ventana al escritorio cuatro", "mover al escritorio cuatro"],
+    "description": "Mueve la ventana activa al escritorio virtual 4",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "4"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 5", "mover al escritorio 5", "mover ventana al escritorio cinco", "mover al escritorio cinco"],
+    "description": "Mueve la ventana activa al escritorio virtual 5",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "5"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 6", "mover al escritorio 6", "mover ventana al escritorio seis", "mover al escritorio seis"],
+    "description": "Mueve la ventana activa al escritorio virtual 6",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "6"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 7", "mover al escritorio 7", "mover ventana al escritorio siete", "mover al escritorio siete"],
+    "description": "Mueve la ventana activa al escritorio virtual 7",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "7"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 8", "mover al escritorio 8", "mover ventana al escritorio ocho", "mover al escritorio ocho"],
+    "description": "Mueve la ventana activa al escritorio virtual 8",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "8"]
+  },
+  {
+    "patterns": ["mover ventana al escritorio 9", "mover al escritorio 9", "mover ventana al escritorio nueve", "mover al escritorio nueve"],
+    "description": "Mueve la ventana activa al escritorio virtual 9",
+    "category": "glazewm",
+    "action": "gwm",
+    "gwm_args": ["move", "--workspace", "9"]
+  },
+  {
+    "patterns": ["duerme", "dormir", "reposo"],
+    "description": "Pone el asistente en reposo (requiere nombre)",
+    "category": "sistema",
+    "action": "dormir"
+  },
+  {
+    "patterns": ["despierta", "despertar", "activo"],
+    "description": "Activa el asistente del reposo (requiere nombre)",
+    "category": "sistema",
+    "action": "despertar"
+  },
+  {
+    "patterns": ["modo escritura", "modo dictado", "empezar a escribir"],
+    "description": "Activa el modo dictado (escribe lo que digas)",
+    "category": "sistema",
+    "action": "modo_escritura"
+  },
+  {
+    "patterns": ["modo comandos", "modo normal", "salir de escritura", "dejar de escribir"],
+    "description": "Desactiva el modo dictado",
+    "category": "sistema",
+    "action": "modo_comandos"
+  },
+  {
+    "patterns": ["abrir codigo", "abrir visual studio"],
+    "description": "Abre VS Code",
+    "category": "general",
+    "action": "programa",
+    "program": "code"
+  },
+  {
+    "patterns": ["abrir lapce"],
+    "description": "Abre Lapce",
+    "category": "general",
+    "action": "programa",
+    "program": "lapce"
+  },
+  {
+    "patterns": ["abrir notepad plus", "abrir notepad plus plus"],
+    "description": "Abre Notepad++",
+    "category": "general",
+    "action": "programa",
+    "program": "notepad++"
+  },
+  {
+    "patterns": ["abrir explorador", "abrir archivos"],
+    "description": "Abre el explorador de archivos",
+    "category": "general",
+    "action": "programa",
+    "program": "explorer"
+  },
+  {
+    "patterns": ["abrir powershell"],
+    "description": "Abre PowerShell 7",
+    "category": "general",
+    "action": "programa",
+    "program": "pwsh"
+  },
+  {
+    "patterns": ["abrir ubuntu", "abrir wsl"],
+    "description": "Abre Ubuntu en WSL",
+    "category": "general",
+    "action": "programa",
+    "program": "wt",
+    "program_args": "-p Ubuntu"
+  },
+  {
+    "patterns": ["abrir vst"],
+    "description": "Abre el perfil SSH VST",
+    "category": "general",
+    "action": "programa",
+    "program": "wt",
+    "program_args": "-p VST"
+  },
+  {
+    "patterns": ["abrir zed"],
+    "description": "Abre Zed",
+    "category": "general",
+    "action": "programa",
+    "program": "zed"
+  },
+  {
+    "patterns": ["abrir"],
+    "description": "Abre un programa escribiendo su nombre",
+    "category": "general",
+    "action": "abrir_catchall",
+    "needs_query": true
+  }
+]
