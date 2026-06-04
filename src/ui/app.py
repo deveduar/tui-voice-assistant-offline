@@ -66,9 +66,16 @@ if TEXTUAL_AVAILABLE:
     _THEMES_SORTED = sorted(BUILTIN_THEMES.keys())
 
     class VoiceAssistantCommands(Provider):
+        def _label_themes(self, app):
+            current_theme = getattr(app, "theme", "")
+            return [
+                (f"• Tema: {t}" if t == current_theme else f"  Tema: {t}", t)
+                for t in _THEMES_SORTED
+            ]
+
         def _yield_themes(self, app, score=60):
-            for tname in _THEMES_SORTED:
-                yield Hit(score, f"Tema: {tname}",
+            for label, tname in self._label_themes(app):
+                yield Hit(score, label,
                           partial(app.action_palette_theme, tname),
                           "Cambiar tema de la interfaz")
 
@@ -76,15 +83,20 @@ if TEXTUAL_AVAILABLE:
             app = self.app
             q = query.lower()
 
+            current_mic = app.config.get("mic_index") if hasattr(app, "config") else None
+            current_model = os.path.abspath(app._model_name) if hasattr(app, "_model_name") else None
+
             if not q:
                 mics = list_microphones()
                 for idx, name in mics:
-                    yield Hit(10, f"[{idx}] {name}",
+                    marker = "•" if idx == current_mic else " "
+                    yield Hit(10, f"{marker} [{idx}] {name}",
                               partial(app.action_palette_mic, idx),
                               "Seleccionar microfono")
                 models = scan_models()
                 for mname in models[:3]:
-                    yield Hit(20, os.path.basename(mname),
+                    marker = "•" if os.path.abspath(mname) == current_model else " "
+                    yield Hit(20, f"{marker} {os.path.basename(mname)}",
                               partial(app.action_palette_model, mname),
                               "Usar modelo de voz")
                 yield Hit(30, "Modo escritura",
@@ -103,7 +115,8 @@ if TEXTUAL_AVAILABLE:
             if "micro" in q or "mic" in q:
                 mics = list_microphones()
                 for idx, name in mics:
-                    yield Hit(10, f"[{idx}] {name}",
+                    marker = "•" if idx == current_mic else " "
+                    yield Hit(10, f"{marker} [{idx}] {name}",
                               partial(app.action_palette_mic, idx),
                               "Seleccionar microfono")
                 return
@@ -111,7 +124,8 @@ if TEXTUAL_AVAILABLE:
             if "modelo" in q or "model" in q:
                 models = scan_models()
                 for mname in models:
-                    yield Hit(20, os.path.basename(mname),
+                    marker = "•" if os.path.abspath(mname) == current_model else " "
+                    yield Hit(20, f"{marker} {os.path.basename(mname)}",
                               partial(app.action_palette_model, mname),
                               "Usar modelo de voz")
                 return
@@ -453,7 +467,7 @@ if TEXTUAL_AVAILABLE:
         def action_palette_model(self, model_name: str):
             abs_path = os.path.abspath(model_name)
             current = self.config.get("model_name")
-            if abs_path == current:
+            if abs_path == os.path.abspath(current):
                 return
             if self.audio_manager:
                 self.audio_manager.stop()
