@@ -10,23 +10,6 @@ DEFAULT_ASSISTANT_NAME = "flex"
 DEFAULT_REQUIRE_NAME = False
 DEFAULT_THEME = "textual-dark"
 
-DEFAULT_LAUNCHERS = {
-    "codigo": "code",
-    "visual studio": "code",
-    "lapce": "lapce",
-    "notepad plus": "notepad++",
-    "notepad plus plus": "notepad++",
-    "explorador": "explorer",
-    "archivos": "explorer",
-    "powershell": "pwsh",
-    "terminal": "wt",
-    "vst": "wt -p VST",
-    "ubuntu": "wt -p Ubuntu",
-    "wsl": "wt -p Ubuntu",
-    "zed": "zed",
-}
-
-
 def resolve_model_path(name: str) -> str:
     if os.path.isabs(name):
         return name
@@ -69,7 +52,6 @@ def get_config():
         "require_name": DEFAULT_REQUIRE_NAME,
         "disabled_commands": [],
         "theme": DEFAULT_THEME,
-        "custom_launchers": dict(DEFAULT_LAUNCHERS),
     }
     for key, val in defaults.items():
         if key not in cfg:

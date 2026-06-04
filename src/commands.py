@@ -3,11 +3,11 @@ import os
 import shutil
 import subprocess
 import webbrowser
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Optional
 
-from .config import get_config, PROJECT_ROOT
+from .config import PROJECT_ROOT
 
 
 @dataclass
@@ -235,8 +235,7 @@ def cargar_comandos(registry: CommandRegistry, path: str = None):
     except (FileNotFoundError, json.JSONDecodeError):
         return
 
-    # Also load custom_launchers for backward compat
-    launchers = get_config().get("custom_launchers", {})
+
 
     _KW_KEYS = ("program", "program_args", "url", "keys", "shell", "confirm",
                 "text", "gwm_args")
@@ -264,14 +263,7 @@ def cargar_comandos(registry: CommandRegistry, path: str = None):
             always_requires_name=always_name,
         ))
 
-    # Backward compat: auto-generate from custom_launchers
-    for voice, program in launchers.items():
-        registry.add(Command(
-            patterns=[f"abrir {voice}"],
-            description=f"Abre {voice}",
-            category="general",
-            action=partial(_accion_programa, program=program),
-        ))
+
 
 
 # --- Module-level registry and loader ---
