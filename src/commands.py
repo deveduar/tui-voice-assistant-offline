@@ -9,6 +9,24 @@ from typing import Callable, Optional
 
 from .config import PROJECT_ROOT
 
+_FAILED_LOG = os.path.join(PROJECT_ROOT, "failed_commands.jsonl")
+
+
+def _log_failed_command(text: str, registry: "CommandRegistry") -> None:
+    import datetime
+    try:
+        closest = registry.match_disabled(text)
+        similar = closest.description if closest else ""
+        entry = json.dumps({
+            "timestamp": datetime.datetime.now().isoformat(),
+            "text": text,
+            "similar": similar,
+        }, ensure_ascii=False)
+        with open(_FAILED_LOG, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
+
 
 @dataclass
 class Command:
@@ -77,6 +95,7 @@ def _accion_programa(app, query, program=None, program_args=None, **kwargs):
     if not program:
         return "No se especifico programa."
     full = f"{program} {program_args}" if program_args else program
+    full = os.path.expandvars(full)
     subprocess.Popen(full, shell=True)
     return f"Abriendo {os.path.basename(program)}."
 
@@ -307,6 +326,7 @@ def ejecutar_comando(text: str, app=None) -> str:
             return ""
         if require_name and not has_prefix:
             return ""
+        _log_failed_command(text, registry)
         return f"Comando no reconocido: '{text}'"
 
     cmd, query = match

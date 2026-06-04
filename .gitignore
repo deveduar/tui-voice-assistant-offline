@@ -1,3 +1,4 @@
 vosk-model-small-es-0.42/
 vosk-model-es-0.42/
 config.json
+failed_commands.jsonl

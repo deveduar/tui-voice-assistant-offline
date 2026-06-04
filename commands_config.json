@@ -7,21 +7,21 @@
     "program": "notepad"
   },
   {
-    "patterns": ["abrir calculadora", "abrir calc"],
+    "patterns": ["abrir calculadora", "abrir calc", "abrir la calculadora"],
     "description": "Abre la Calculadora de Windows",
     "category": "general",
     "action": "programa",
     "program": "calc"
   },
   {
-    "patterns": ["abrir navegador", "abrir internet"],
+    "patterns": ["abrir navegador", "abrir internet", "abrir el navegador"],
     "description": "Abre el navegador en Google",
     "category": "general",
     "action": "url",
     "url": "https://www.google.com"
   },
   {
-    "patterns": ["buscar en google"],
+    "patterns": ["buscar en google", "busca en google"],
     "description": "Busca un termino en Google",
     "category": "general",
     "action": "url",
@@ -35,7 +35,7 @@
     "action": "cambiar_micro"
   },
   {
-    "patterns": ["salir", "adios", "adiós", "cerrar asistente"],
+    "patterns": ["salir", "adios", "adiós", "cerrar asistente", "apagar asistente"],
     "description": "Cierra el asistente de voz",
     "category": "general",
     "action": "salir",
@@ -352,14 +352,14 @@
     "action": "modo_comandos"
   },
   {
-    "patterns": ["abrir codigo", "abrir visual studio"],
+    "patterns": ["abrir codigo", "abrir código", "abrir visual studio", "abrir visual estudio"],
     "description": "Abre VS Code",
     "category": "general",
     "action": "programa",
     "program": "code"
   },
   {
-    "patterns": ["abrir lapce"],
+    "patterns": ["abrir lapce", "abrir lapse", "abrir lap sé", "abrir lápiz"],
     "description": "Abre Lapce",
     "category": "general",
     "action": "programa",
@@ -408,6 +408,21 @@
     "category": "general",
     "action": "programa",
     "program": "zed"
+  },
+  {
+    "patterns": ["abrir flow launcher", "abrir flow"],
+    "description": "Abre Flow Launcher",
+    "category": "general",
+    "action": "programa",
+    "program": "%LOCALAPPDATA%\\FlowLauncher\\FlowLauncher.exe"
+  },
+  {
+    "patterns": ["buscar en youtube", "buscar video"],
+    "description": "Busca un video en YouTube",
+    "category": "general",
+    "action": "url",
+    "url": "https://www.youtube.com/results?search_query={query}",
+    "needs_query": true
   },
   {
     "patterns": ["abrir"],
