@@ -364,6 +364,8 @@ if TEXTUAL_AVAILABLE:
             self._save_disabled_state()
             if self.audio_manager:
                 self.audio_manager.stop()
+            sys.stdout.write("\x1b[?1000l\x1b[?1002l\x1b[?1006l\x1b[?25h")
+            sys.stdout.flush()
             self.exit()
 
         def action_dormir(self):
