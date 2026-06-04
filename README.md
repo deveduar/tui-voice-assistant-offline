@@ -1,25 +1,26 @@
-# Asistente de Voz — Offline con Vosk + Textual TUI
+# Flex — Asistente de Voz Offline
 
-Asistente por voz en español, 100% offline, con interfaz TUI moderna (Textual).
-Reconoce comandos de voz y ejecuta acciones en Windows.
+Asistente por voz en español, 100% offline (Vosk), con interfaz TUI moderna (Textual) y comandos configurables vía JSON.
 
 ## Requisitos
 
-- Python 3.8+
+- Python 3.10+
 - Windows 10/11 (recomendado Windows Terminal)
-- Microfono funcional
+- Micrófono funcional
 - Opcional: [GlazeWM](https://github.com/glazerdesktop/GlazeWM) para comandos de ventanas
 
-## Instalacion
+## Instalación
 
 ```cmd
 pip install -r requirements.txt
 ```
 
-Esto instala:
-- `vosk` — reconocimiento offline de voz
-- `pyaudio` — captura de audio del microfono
-- `textual` — interfaz TUI moderna
+Esto instala: `vosk`, `pyaudio`, `textual`.
+
+Descarga un modelo Vosk en español y extráelo en la raíz del proyecto:
+
+- **Modelo pequeño** (~40 MB, rápido): `vosk-model-small-es-0.42`
+- **Modelo grande** (~1.5 GB, más preciso): `vosk-model-es-0.42`
 
 ## Uso
 
@@ -27,309 +28,182 @@ Esto instala:
 python main.py
 ```
 
-### Primera ejecucion
-
-1. El asistente carga el modelo de voz (~40 MB) de forma asincrona (no bloquea la TUI).
-2. Si no hay `config.json` o el microfono guardado no es valido, se abre un menu TUI para seleccionar el microfono.
-3. La seleccion se guarda en `config.json` para usos posteriores.
+En la primera ejecución:
+1. Se detectan automáticamente los modelos Vosk disponibles.
+2. Si no hay `config.json` o el micrófono guardado no es válido, se abre un menú TUI para seleccionar el micrófono.
+3. El asistente carga el modelo de forma asíncrona (no bloquea la TUI).
 4. Comienza la escucha continua.
 
-## Doble modo de funcionamiento
+## Cómos rápidos
 
-El asistente tiene **dos modos** segun si `textual` esta instalado:
+| Pregunta | Respuesta |
+|----------|-----------|
+| Cómo abro la paleta de comandos | `Ctrl+P` |
+| Cómo cierro el asistente | `Q` o voz: *"flex salir"* |
+| Cómo activo el dictado | Voz: *"modo escritura"* |
+| Cómo desactivo el dictado | Voz: *"modo comandos"* |
+| Cómo duermo al asistente | Voz: *"flex duerme"* |
+| Cómo veo/desactivo comandos | `M` o voz: *"configurar comandos"* |
+| Cómo cambio de tema | `Ctrl+P` → escribe "tema" |
+| Cómo cambio de micrófono | `Ctrl+P` → escribe "micro" |
+| Cómo cambio de modelo | `Ctrl+P` → escribe "modelo" |
 
-| Modo | Cuando | Interfaz |
-|------|--------|----------|
-| **TUI** (recomendado) | `textual` instalado | Interfaz grafica en terminal con Header, RichLog, atajos de teclado |
-| **Texto simple** (fallback) | `textual` no instalado | Seleccion numerica de microfono, salida por consola con prints |
-
-No necesitas decidir nada: si `textual` esta disponible se usa la TUI,
-si no, cae automaticamente al modo texto.
-
-## Interfaz TUI
+## Widgets y atajos
 
 ```
-+------------------------------------------+
-|  Asistente de Voz                        |  <- Header
-+------------------------------------------+
-|  flex abre notepad                       |  <- RichLog (historial)
-|  Abriendo el bloc de notas.              |
-|  [Escritura] esto es un texto dictado    |
-+------------------------------------------+
-|  texto parcial de voz...                 |  <- Static (texto parcial)
-+------------------------------------------+
-|  Escuchando... [small-es-0.42]            |  <- Status bar (incluye modelo)
-+------------------------------------------+
-|  [Q] Salir  [M] Menu  [Ctrl+P] Paleta    |  <- Footer
-+------------------------------------------+
+┌─────────────────────────────────────────────┐
+│  Flex — Asistente de Voz                    │  Header
+├─────────────────────────────────────────────┤
+│  flex abre notepad                          │  RichLog (historial)
+│  Abriendo el bloc de notas.                 │
+│  [Escritura] esto es texto dictado          │
+├─────────────────────────────────────────────┤
+│  texto parcial de voz...                    │  Static (texto parcial)
+├─────────────────────────────────────────────┤
+│  💤 Dormido · modelo-small-es-0.42 · Mic 1  │  Status bar
+├─────────────────────────────────────────────┤
+│  [Q] Salir  [M] Comandos  [Ctrl+P] Paleta   │  Footer
+└─────────────────────────────────────────────┘
 ```
 
-### Atajos de teclado
-
-| Tecla | Accion |
+| Tecla | Acción |
 |-------|--------|
-| `Q` | Salir del asistente |
-| `M` | Abrir Menu Comandos (activar/desactivar comandos) |
-| `Ctrl+P` | Abrir paleta de comandos (microfono, modelo, dormir, escritura, ...) |
-| `Enter` | (en Menu Comandos) Activar/desactivar comando |
-| `Escape` | Salir del Menu Comandos (guarda cambios) |
+| `Q` | Salir |
+| `M` | Menú de comandos (activar/desactivar) |
+| `Ctrl+P` | Paleta de comandos |
+| `Enter` | (en menú comandos) Alternar comando |
+| `Esc` | (en menú comandos) Guardar y cerrar |
 
-### Paleta de comandos (Ctrl+P)
+En la paleta (`Ctrl+P`) escribe palabras clave para filtrar:
 
-La paleta de comandos permite acceder rapidamente a funciones sin usar teclas dedicadas.
-Usa un `Input` con placeholder customizado que muestra las opciones disponibles.
-Los comandos aparecen agrupados por keyword de busqueda:
-
-- **micro**: cambiar microfono activo
-- **modelo**: cambiar modelo de voz (grande/pequeno)
-- **modo**: dormir / despertar / modo escritura / modo comandos
-- **escritura**: activar/desactivar dictado
-- **comandos**: configurar comandos
-- **asistente**: salir del asistente
-- **configurar**: abrir configuracion de comandos
-
-Al abrirla con `Ctrl+P` escribe para filtrar entre las opciones.
-
-## Nombre del asistente (wake word)
-
-Puedes anteceder cualquier comando con el nombre del asistente (configurable en `config.json`):
-
-> "**flex** abre notepad"
-> "**flex** siguiente escritorio"
-> "**flex** ayuda"
-
-Si `require_name` esta en `true` en `config.json`, el nombre es **obligatorio**
-para todos los comandos. Por defecto esta en `false` (el nombre es opcional).
-
-Los comandos de dormir/despertar **siempre requieren** el nombre del asistente.
-
-## Modo escritura (dictado)
-
-Activa el modo escritura con **"modo escritura"** / **"modo dictado"**.
-En este modo, todo lo que digas se escribe automaticamente en la ventana activa.
-
-- Entrar: "modo escritura", "modo dictado", o desde `Ctrl+P`
-- Salir: "modo comandos", "modo normal", "salir de escritura", o desde `Ctrl+P`
-- La barra de estado muestra "Escribiendo..." cuando esta activo
-- Cada frase dictada se registra en el log con el prefijo `[Escritura]`
-
-### Metodo de escritura
-
-Usa `SendInput` con `KEYEVENTF_UNICODE` para inyectar cada caracter directamente
-en la ventana con foco, sin usar portapapeles. Esto funciona en cualquier
-aplicacion que acepte entrada de teclado (Bloc de Notas, Obsidian, navegadores, etc.).
-
-Las funciones Win32 tienen `argtypes` y `restype` declarados para convencion
-de llamada correcta en x64. La estructura `INPUT` usa un `Union` completo
-(`MOUSEINPUT` | `KEYBDINPUT` | `HARDWAREINPUT`) de 40 bytes, igualando
-el layout que espera la API de Windows.
-
-Funciones auxiliares de portapapeles (`SetClipboardData` + `Ctrl+V`) se
-mantienen como fallback pero no se usan en el flujo principal.
-
-## Modo dormir / despertar
-
-- **"[nombre] duerme"** — el asistente deja de procesar comandos (sigue escuchando).
-  Muestra "Dormido" en la barra de estado.
-- **"[nombre] despierta"** — vuelve al modo normal.
-- Tambien se puede desde `Ctrl+P` en la paleta de comandos.
-- Siempre requieren el nombre del asistente (ej: "flex duerme").
-
-## Seleccion de modelo de voz
-
-El asistente detecta automaticamente las carpetas `vosk-model-*` en la raiz del proyecto.
-Puedes cambiar entre modelos desde la paleta de comandos (`Ctrl+P`, escribe "modelo").
-El nombre del modelo activo se muestra en la barra de estado.
-
-Modelos disponibles:
-- `vosk-model-small-es-0.42` (~40 MB, rapido, defecto)
-- `vosk-model-es-0.42` (~1.5 GB, mas preciso)
-
-El cambio de modelo ocurre en caliente: detiene el audio, carga el nuevo modelo
-de forma asincrona (`run_in_executor`), muestra "Cargando..." en la barra de
-estado, y reanuda al terminar.
+- **micro** — cambiar micrófono
+- **modelo** — cambiar modelo de voz
+- **modo** — dormir / despertar / escritura / comandos
+- **tema** — cambiar tema de la interfaz
+- **comandos** — abrir configuración de comandos
+- **asistente** — salir
 
 ## Comandos de voz
 
-### Generales
+Los comandos se definen en `commands_config.json`. Cada entrada tiene:
 
-| Comando | Accion |
-|---------|--------|
-| "abrir bloc de notas" / "abrir notepad" | Abre el Bloc de Notas |
-| "abrir calculadora" / "abrir calc" | Abre la Calculadora |
-| "abrir navegador" / "abrir internet" | Abre el navegador en google.com |
-| "buscar en google [consulta]" | Busca en Google |
-| "abrir [programa]" | Abre un programa configurado (codigo, lapce, notepad plus, explorador, ...) |
-| "cambiar microfono" / "cambiar microfono" | Cambia de microfono |
-| "salir" / "adios" / "cerrar asistente" | Cierra el asistente |
-| "configurar comandos" / "gestionar comandos" | Abre el Menu Comandos |
+```json
+{
+  "patterns": ["abrir bloc de notas", "abrir notepad"],
+  "description": "Abre el Bloc de Notas",
+  "category": "general",
+  "action": "programa",
+  "program": "notepad"
+}
+```
 
-### GlazeWM (ventanas y escritorios)
+### Tipos de acción
 
-Requiere [GlazeWM](https://github.com/glazerdesktop/GlazeWM) instalado y `glazewm.exe` en PATH.
+| Tipo | Qué hace | Parámetros |
+|------|----------|------------|
+| `programa` | Ejecuta un programa | `program`, `program_args` |
+| `url` | Abre una URL en el navegador | `url`, `needs_query` |
+| `teclear` | Envía teclas a la ventana activa | `keys` |
+| `gwm` | Comando para GlazeWM | `gwm_args` |
+| `shell` | Ejecuta un comando shell | `shell_cmd` |
+| `abrir_catchall` | Busca un programa por nombre | (usa `query` directamente) |
 
-| Comando | Accion |
-|---------|--------|
-| "abrir terminal" / "abrir cmd" | Abre Windows Terminal |
-| "cerrar ventana" | Cierra la ventana activa |
-| "siguiente escritorio" / "siguiente" | Siguiente escritorio virtual |
-| "anterior escritorio" / "anterior" | Anterior escritorio virtual |
-| "ultimo escritorio" / "volver" | Vuelve al ultimo escritorio activo |
-| "ir al escritorio [1-9]" / "escritorio [uno-nueve]" | Ir al escritorio N |
-| "mover ventana al escritorio [1-9]" | Mueve la ventana activa al escritorio N |
-| "maximizar ventana" / "maximizar" | Pantalla completa |
-| "minimizar ventana" / "minimizar" | Minimiza la ventana |
-| "hacer flotante" / "flotar ventana" | Cambia a modo flotante |
-| "hacer fija" / "fijar ventana" | Cambia a modo fijo (tiling) |
-| "enfocar izquierda/derecha/arriba/abajo" | Enfoca ventana en esa direccion |
-| "mover izquierda/derecha/arriba/abajo" | Mueve la ventana activa en esa direccion |
-| "ciclar foco" / "siguiente ventana" | Cambia el foco entre ventanas flotantes/ancladas |
-| "cambiar direccion" / "cambiar direccion tiling" | Cambia la direccion de insercion de ventanas |
-| "redibujar" / "refrescar ventanas" | Redibuja todas las ventanas |
-| "pausar glaze" / "reanudar glaze" | Pausa/reanuda la gestion de ventanas |
-| "recargar config" / "recargar configuracion" | Recarga config de GlazeWM |
+`needs_query: true` indica que el comando espera texto adicional (ej: *"buscar en youtube cómo hacer paella"` → busca el query).
 
-### Sistema
+### Variables de entorno
 
-| Comando | Accion |
-|---------|--------|
-| "[nombre] duerme" / "[nombre] dormir" | Pone el asistente en reposo |
-| "[nombre] despierta" / "[nombre] despertar" | Activa el asistente |
-| "modo escritura" / "modo dictado" | Activa modo dictado |
-| "modo comandos" / "modo normal" / "salir de escritura" | Desactiva modo dictado |
+En `program` se pueden usar variables como `%LOCALAPPDATA%` o `$USER`; se expanden automáticamente.
 
-### Lanzadores personalizados
+## Modo escritura (dictado)
 
-Los programas se configuran en `config.json` bajo `custom_launchers`. Valores por defecto:
+Actívalo con *"modo escritura"* o *"modo dictado"*. Todo lo que digas se inyecta en la ventana activa.
 
-| Voz | Comando |
-|-----|---------|
-| "abrir codigo" / "abrir visual studio" | `code` (VS Code) |
-| "abrir lapce" | `lapce` |
-| "abrir notepad plus" / "abrir notepad plus plus" | `notepad++` |
-| "abrir explorador" / "abrir archivos" | `explorer` |
-| "abrir powershell" | `pwsh` (PowerShell 7) |
-| "abrir terminal" | `wt` (Windows Terminal) |
-| "abrir ubuntu" / "abrir wsl" | `wt -p Ubuntu` |
-| "abrir vst" | `wt -p VST` (perfil SSH) |
-| "abrir zed" | `zed` |
+- **Entrar**: voz *"modo escritura"*, *"modo dictado"* o `Ctrl+P` → escritura
+- **Salir**: voz *"modo comandos"*, *"modo normal"*, *"salir de escritura"* o `Ctrl+P` → comandos
+- **Método**: `SendMessageW(WM_CHAR)` — inyección directa en la cola de mensajes de la ventana, sin portapapeles ni `SendInput`
 
-Puedes anadir o modificar entradas editando `config.json`.
+## Nombre del asistente (wake word)
+
+En `config.json`:
+
+```json
+{
+  "assistant_name": "flex",
+  "require_name": false
+}
+```
+
+- `assistant_name` — palabra para anteceder comandos (ej: *"flex abre notepad"*)
+- `require_name` — si es `true`, **todos** los comandos requieren el nombre
+
+Los comandos de dormir/despertar siempre requieren el nombre.
+
+## Gestión de comandos
 
 ### Desactivar comandos
 
-Cada comando tiene un campo `enabled`. Los comandos desactivados no
-se ejecutan y se muestran en el Menu Comandos con la marca "✘".
+Desde el menú (`M` o voz *"configurar comandos"*):
+- Los comandos desactivados se marcan con ✘
+- Al hablar un comando desactivado: *"Comando deshabilitado: ..."*
+- El estado persiste entre sesiones en `config.json > disabled_commands`
+- El menú no se apila si ya está abierto
 
-El estado de los comandos desactivados:
-- Se guarda en `config.json` (`disabled_commands`)
-- Persiste entre sesiones
-- Al hablar un comando desactivado se muestra "Comando deshabilitado: [descripcion]"
-- `match_disabled()` se ejecuta antes que `registry.match()` para detectarlos
+### Comandos fallidos
 
-## Menu Comandos (M)
+Los comandos que no se reconocen se registran en `failed_commands.jsonl` con timestamp. Útil para detectar patrones que faltan y añadirlos a `commands_config.json`.
 
-El Menu Comandos (`M` o "configurar comandos" por voz) muestra todos los comandos
-disponibles con su estado (activado/desactivado). Sirve para:
+## Configuración
 
-- Ver la lista completa de comandos
-- Activar o desactivar comandos individualmente
-- Persistir los cambios en `config.json`
-
-Protege contra apertura duplicada: si ya esta abierto, no se apila otra instancia.
-
-## Configuracion
-
-El archivo `config.json` se genera automaticamente en la raiz del proyecto:
+`config.json` se genera automáticamente:
 
 ```json
 {
   "mic_index": 1,
   "assistant_name": "flex",
   "require_name": false,
-  "theme": "textual-dark",
+  "theme": "catppuccin-mocha",
   "model_name": "vosk-model-small-es-0.42",
-  "disabled_commands": [],
-  "custom_launchers": {
-    "codigo": "code",
-    "visual studio": "code",
-    "lapce": "lapce",
-    "notepad plus": "notepad++",
-    "notepad plus plus": "notepad++",
-    "explorador": "explorer",
-    "archivos": "explorer",
-    "powershell": "pwsh",
-    "terminal": "wt",
-    "vst": "wt -p VST",
-    "ubuntu": "wt -p Ubuntu",
-    "wsl": "wt -p Ubuntu",
-    "zed": "zed"
-  }
+  "disabled_commands": []
 }
 ```
 
-| Campo | Descripcion |
+| Campo | Descripción |
 |-------|-------------|
-| `mic_index` | Indice del microfono a usar |
+| `mic_index` | Índice del micrófono |
 | `assistant_name` | Nombre del asistente (wake word) |
-| `require_name` | Si es true, todos los comandos requieren el nombre |
-| `theme` | Tema de Textual ("textual-dark", "monokai", "dracula", "gruvbox", etc.) |
-| `model_name` | Ruta del modelo Vosk (ej: "vosk-model-small-es-0.42") |
-| `disabled_commands` | Lista de patrones de comandos desactivados |
-| `custom_launchers` | Mapa de voz → comando para "abrir [programa]" |
+| `require_name` | Si es `true`, nombre obligatorio para todo |
+| `theme` | Tema Textual (`catppuccin-mocha`, `dracula`, `gruvbox`, `monokai`, etc.) |
+| `model_name` | Carpeta del modelo Vosk |
+| `disabled_commands` | IDs de comandos desactivados |
 
-Si el microfono guardado no es valido, el asistente abre el menu TUI
-para seleccionar uno nuevo.
+Se puede cambiar el tema desde la paleta (`Ctrl+P` → tema) y se guarda automáticamente.
 
-Para cambiar el tema, edita el campo `theme` en `config.json`. Temas comunes:
-`textual-dark`, `monokai`, `dracula`, `gruvbox`, `catppuccin`, `nord`.
-
-## Sin Textual (fallback)
-
-Si `textual` no esta instalado, el asistente funciona en modo texto simple
-(seleccion numerica de microfono + salida por consola).
-Los comandos de voz funcionan igual, solo cambia la interfaz.
-
-## Estructura del proyecto
+## Estructura
 
 ```
 audio-vosk/
-+-- main.py                        # Punto de entrada
-+-- config.json                    # Configuracion persistente (se crea solo)
-+-- requirements.txt               # Dependencias
-+-- README.md                      # Este archivo
-+-- vosk-model-small-es-0.42/      # Modelo de voz (no tocar)
-+-- .gitignore
-+-- src/
-    +-- __init__.py
-    +-- config.py                  # Carga/guarda config.json, resuelve rutas absolutas
-    +-- audio.py                   # AudioManager (hilo + cola) + listar microfonos
-    +-- commands.py                # CommandRegistry + definicion de comandos
-    +-- writer.py                  # SendInput + KEYEVENTF_UNICODE (solo ctypes)
-    +-- ui/
-        +-- __init__.py
-        +-- app.py                 # VoiceAssistantApp (Textual) + run()
-        +-- screens.py             # CommandConfigScreen
-        +-- fallback.py            # Modo texto sin Textual
+├── main.py                        # Punto de entrada
+├── config.json                    # Configuración persistente (se crea solo)
+├── commands_config.json           # Comandos de voz editables por el usuario
+├── failed_commands.jsonl          # Comandos no reconocidos (se crea solo)
+├── requirements.txt
+├── vosk-model-small-es-0.42/      # Modelo de voz
+├── src/
+│   ├── config.py                  # Carga/guarda config.json
+│   ├── audio.py                   # AudioManager (hilo + cola)
+│   ├── commands.py                # CommandRegistry + acciones genéricas
+│   ├── writer.py                  # SendMessageW(WM_CHAR) para dictado
+│   └── ui/
+│       ├── app.py                 # VoiceAssistantApp (Textual)
+│       ├── screens.py             # CommandConfigScreen
+│       └── fallback.py            # Modo texto sin Textual
 ```
 
-## Notas tecnicas
+## Notas técnicas
 
-- **Salida limpia**: el flag `_exiting` evita que `_check_queue` se ejecute
-  despues de que se solicito la salida. `_salir` llama a `app.action_salir()`
-  directamente sin `call_later`, restaurando el mouse tracking del terminal.
-- **Robustez de audio**: `_check_queue` esta envuelto en `try/except`. Si el
-  hilo de audio falla, `AudioManager` se reinicia automaticamente.
-- **Lanzamiento no bloqueante**: `os.system()` reemplazado por `subprocess.Popen()`
-  en todos los lanzadores (`_abrir_notepad`, `_abrir_calc`, `_abrir_terminal`)
-  para no bloquear el event loop.
-- **Validacion de programas**: `_abrir_programa` usa `shutil.which()` antes de
-  lanzar, evitando errores silenciosos.
-- **Escritura**: usa exclusivamente `ctypes` (sin librerias de terceros).
-  `SendInput` con `KEYEVENTF_UNICODE` inyecta caracter a caracter.
-  La estructura `INPUT` usa un `Union` completo con `MOUSEINPUT`, `KEYBDINPUT`
-  y `HARDWAREINPUT` para igualar el layout de 40 bytes que espera Windows x64.
-- **Rutas absolutas**: todas las rutas se resuelven contra `PROJECT_ROOT` con
-  `resolve_model_path()` y `scan_models()`, robusto contra cambios de directorio
-  de trabajo.
-- **Comandos GlazeWM**: requieren que `glazewm.exe` este en el PATH del sistema.
+- **Salida limpia**: flag `_exiting` + restauración manual de mouse tracking del terminal (`\x1b[?1000l\x1b[?1002l\x1b[?1006l`)
+- **Robustez**: `_check_queue` envuelto en `try/except`; reinicio automático del hilo de audio si falla
+- **No bloqueante**: `subprocess.Popen()` en todos los lanzadores
+- **Validación**: `shutil.which()` antes de ejecutar programas
+- **Dictado**: solo `ctypes` (sin librerías de terceros); `SendMessageW(WM_CHAR)` inyección carácter por carácter
+- **Rutas absolutas**: resueltas contra `PROJECT_ROOT` mediante `os.path.join`

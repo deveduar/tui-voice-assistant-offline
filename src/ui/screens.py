@@ -35,17 +35,18 @@ class CommandConfigScreen(Screen):
         self._row_to_cmd = []
         table = self.query_one("#cmd-table", DataTable)
         table.cursor_type = "row"
-        table.add_columns("", "Comando", "Accion")
+        table.add_columns("", "Comando", "Patrones", "Accion")
         for cat_label, cat_key in _CATEGORIES:
             cmds = [(i, c) for i, c in enumerate(registry.all()) if c.category == cat_key]
             if not cmds:
                 continue
             self._row_to_cmd.append(None)
-            table.add_row("", f"── {cat_label} ──", "")
+            table.add_row("", f"── {cat_label} ──", "", "")
             for cmd_idx, cmd in cmds:
                 self._row_to_cmd.append(cmd_idx)
                 icon = "✔" if cmd.enabled else "✘"
-                table.add_row(icon, cmd.patterns[0], cmd.description)
+                patterns_str = ", ".join(cmd.patterns)
+                table.add_row(icon, cmd.patterns[0], patterns_str, cmd.description)
 
     def on_data_table_row_selected(self, event):
         self._toggle_cursor()

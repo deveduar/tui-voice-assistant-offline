@@ -1,6 +1,6 @@
 [
   {
-    "patterns": ["abrir bloc de notas", "abrir notepad"],
+    "patterns": ["abrir bloc de notas", "abrir bloc"],
     "description": "Abre el Bloc de Notas de Windows",
     "category": "general",
     "action": "programa",
@@ -352,14 +352,14 @@
     "action": "modo_comandos"
   },
   {
-    "patterns": ["abrir codigo", "abrir código", "abrir visual studio", "abrir visual estudio"],
+    "patterns": ["abrir codigo", "abrir código", "abrir visual studio", "abrir visual estudio", "abrir editor uno"],
     "description": "Abre VS Code",
     "category": "general",
     "action": "programa",
     "program": "code"
   },
   {
-    "patterns": ["abrir lapce", "abrir lapse", "abrir lap sé", "abrir lápiz"],
+    "patterns": ["abrir lapce", "abrir lapse", "abrir lap sé", "abrir lápiz", "abrir editor dos"],
     "description": "Abre Lapce",
     "category": "general",
     "action": "programa",
@@ -387,7 +387,7 @@
     "program": "pwsh"
   },
   {
-    "patterns": ["abrir ubuntu", "abrir wsl"],
+    "patterns": ["abrir ubuntu", "abrir perfil dos"],
     "description": "Abre Ubuntu en WSL",
     "category": "general",
     "action": "programa",
@@ -395,7 +395,7 @@
     "program_args": "-p Ubuntu"
   },
   {
-    "patterns": ["abrir vst"],
+    "patterns": ["abrir perfil tres", "abrir perfil tres"],
     "description": "Abre el perfil SSH VST",
     "category": "general",
     "action": "programa",
@@ -403,18 +403,11 @@
     "program_args": "-p VST"
   },
   {
-    "patterns": ["abrir zed"],
+    "patterns": ["abrir zed", "abrir editor tres"],
     "description": "Abre Zed",
     "category": "general",
     "action": "programa",
     "program": "zed"
-  },
-  {
-    "patterns": ["abrir flow launcher", "abrir flow"],
-    "description": "Abre Flow Launcher",
-    "category": "general",
-    "action": "programa",
-    "program": "%LOCALAPPDATA%\\FlowLauncher\\FlowLauncher.exe"
   },
   {
     "patterns": ["buscar en youtube", "buscar video"],
