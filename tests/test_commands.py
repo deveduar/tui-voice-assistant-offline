@@ -119,6 +119,13 @@ class TestCargarComandos:
 
 
 class TestAccionPrograma:
+    @pytest.fixture(autouse=True)
+    def _mock_popen(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.commands.subprocess.Popen",
+            lambda *a, **kw: None,
+        )
+
     def test_no_program_returns_error(self):
         class FakeApp:
             pass
@@ -138,7 +145,6 @@ class TestAccionPrograma:
             lambda *a, **kw: calls.append(a[0]),
         )
         result = _accion_programa(None, "", program="notepad")
-        # Popen se llama con el string ya expandido
         assert len(calls) == 1
         assert "notepad" in calls[0]
 
@@ -160,6 +166,10 @@ class TestAccionPrograma:
 
 
 class TestAccionUrl:
+    @pytest.fixture(autouse=True)
+    def _mock_webbrowser(self, monkeypatch):
+        monkeypatch.setattr("src.commands.webbrowser.open", lambda url: None)
+
     def test_opens_url(self, monkeypatch):
         opened = []
         monkeypatch.setattr("src.commands.webbrowser.open", lambda url: opened.append(url))
@@ -183,6 +193,10 @@ class TestAccionUrl:
 
 
 class TestEjecutarComando:
+    @pytest.fixture(autouse=True)
+    def _mock_log(self, monkeypatch):
+        monkeypatch.setattr("src.commands._log_failed_command", lambda *a, **kw: None)
+
     def test_empty_text_returns_empty(self):
         assert ejecutar_comando("") == ""
 
@@ -193,9 +207,6 @@ class TestEjecutarComando:
         result = ejecutar_comando("hacer algo imposible")
         assert "no reconocido" in result
 
-    def test_recognized_returns_action_result(self):
-        # Depende del registry cargado por defecto
-        result = ejecutar_comando("abrir notepad")
-        # Si notepad no está en el registry, será "no reconocido"
-        # Esto es un test de integración básico
-        assert isinstance(result, str)
+    def test_unrecognized_with_app(self):
+        result = ejecutar_comando("xyzzy no existe")
+        assert "no reconocido" in result

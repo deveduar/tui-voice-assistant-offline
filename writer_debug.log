@@ -1,2 +1,5 @@
-2026-06-05 14:46:39,650 write_text text='probando moda escritura'
-2026-06-05 14:46:39,656 sendmessage sent 23 chars
+2026-06-05 16:20:40,020 write_text no foreground window
+2026-06-05 16:20:40,021 write_text text='abc'
+2026-06-05 16:20:40,021 sendmessage sent 3 chars
+2026-06-05 16:20:40,023 write_text text=''
+2026-06-05 16:20:40,023 sendmessage sent 0 chars

@@ -97,16 +97,29 @@ class TestResolveModelPath:
 
 
 class TestScanModels:
-    def test_returns_list(self):
+    def test_returns_list(self, monkeypatch):
+        monkeypatch.setattr("src.config.os.listdir", lambda _: [
+            "vosk-model-small-es-0.42",
+            "vosk-model-es-0.42",
+            "main.py",
+            "README.md",
+        ])
+        monkeypatch.setattr("src.config.os.path.isdir", lambda p: "vosk-model" in p)
         models = scan_models()
         assert isinstance(models, list)
+        assert len(models) == 2
 
-    def test_returns_absolute_paths(self):
+    def test_returns_absolute_paths(self, monkeypatch):
+        monkeypatch.setattr("src.config.os.listdir", lambda _: [
+            "vosk-model-small-es-0.42",
+        ])
+        monkeypatch.setattr("src.config.os.path.isdir", lambda p: True)
         models = scan_models()
-        if models:
-            assert os.path.isabs(models[0])
+        assert len(models) == 1
+        assert os.path.isabs(models[0])
 
-    def test_each_path_is_directory(self):
+    def test_fallback_when_oserror(self, monkeypatch):
+        monkeypatch.setattr("src.config.os.listdir", lambda _: (_ for _ in ()).throw(OSError))
         models = scan_models()
-        if models:
-            assert all(os.path.isdir(m) or True for m in models)
+        assert isinstance(models, list)
+        assert len(models) >= 1
