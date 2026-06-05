@@ -68,7 +68,7 @@ class TestGetConfig:
         cfg = get_config()
         assert "mic_index" in cfg
         assert "model_name" in cfg
-        assert "assistant_name" in cfg
+        assert "assistant_names" in cfg
         assert "require_name" in cfg
         assert "disabled_commands" in cfg
         assert "theme" in cfg
@@ -78,9 +78,9 @@ class TestGetConfig:
         cfg = get_config()
         assert cfg["mic_index"] == 99
 
-    def test_default_assistant_name(self, temp_config_path):
+    def test_default_assistant_names(self, temp_config_path):
         cfg = get_config()
-        assert cfg["assistant_name"] == "flex"
+        assert cfg["assistant_names"] == ["flex"]
 
 
 class TestResolveModelPath:

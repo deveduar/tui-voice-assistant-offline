@@ -15,7 +15,7 @@ import vosk
 
 from ..config import (
     MODEL_PATH, DEFAULT_MIC_INDEX,
-    DEFAULT_ASSISTANT_NAME, DEFAULT_REQUIRE_NAME,
+    DEFAULT_ASSISTANT_NAMES, DEFAULT_REQUIRE_NAME,
     get_config, save_config, scan_models,
     PROJECT_ROOT, resolve_model_path,
 )
@@ -215,8 +215,9 @@ if TEXTUAL_AVAILABLE:
             self.sleeping = False
             self.writing_mode = False
 
-            cfg_name = self.config.get("assistant_name", DEFAULT_ASSISTANT_NAME)
-            self.assistant_name = cfg_name.strip().lower()
+            raw_names = self.config.get("assistant_names", DEFAULT_ASSISTANT_NAMES)
+            self.assistant_names = [n.strip().lower() for n in raw_names if n.strip()]
+            self.assistant_name = self.assistant_names[0] if self.assistant_names else DEFAULT_ASSISTANT_NAMES[0]
             self.require_name = self.config.get("require_name", DEFAULT_REQUIRE_NAME)
             raw = self.config.get("model_name", MODEL_PATH)
             self._model_name = resolve_model_path(raw)

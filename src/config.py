@@ -6,7 +6,7 @@ MODEL_PATH = os.path.join(PROJECT_ROOT, "vosk-model-small-es-0.42")
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 DEFAULT_MIC_INDEX = 1
 DEFAULT_MODEL_NAME = "vosk-model-small-es-0.42"
-DEFAULT_ASSISTANT_NAME = "flex"
+DEFAULT_ASSISTANT_NAMES = ["flex"]
 DEFAULT_REQUIRE_NAME = False
 DEFAULT_THEME = "textual-dark"
 
@@ -45,10 +45,15 @@ def save_config(config: dict) -> None:
 def get_config():
     cfg = load_config()
     changed = False
+    if "assistant_name" in cfg and "assistant_names" not in cfg:
+        old = cfg.pop("assistant_name")
+        cfg["assistant_names"] = [old.strip().lower()] if old else list(DEFAULT_ASSISTANT_NAMES)
+        changed = True
+
     defaults = {
         "mic_index": DEFAULT_MIC_INDEX,
         "model_name": DEFAULT_MODEL_NAME,
-        "assistant_name": DEFAULT_ASSISTANT_NAME,
+        "assistant_names": DEFAULT_ASSISTANT_NAMES,
         "require_name": DEFAULT_REQUIRE_NAME,
         "disabled_commands": [],
         "theme": DEFAULT_THEME,

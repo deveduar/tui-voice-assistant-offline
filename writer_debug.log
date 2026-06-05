@@ -1,5 +1,0 @@
-2026-06-05 16:28:08,260 write_text no foreground window
-2026-06-05 16:28:08,262 write_text text='abc'
-2026-06-05 16:28:08,262 sendmessage sent 3 chars
-2026-06-05 16:28:08,263 write_text text=''
-2026-06-05 16:28:08,263 sendmessage sent 0 chars

@@ -265,7 +265,7 @@ class TestEjecutarComandoConApp:
     @pytest.fixture
     def app_base(self):
         class FakeApp:
-            assistant_name = "flex"
+            assistant_names = ["flex"]
             require_name = False
             sleeping = False
         return FakeApp()

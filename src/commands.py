@@ -296,21 +296,22 @@ def ejecutar_comando(text: str, app=None) -> str:
     if not text:
         return ""
 
-    assistant_name = ""
+    assistant_names = []
     require_name = False
     sleeping = False
     if app:
-        assistant_name = getattr(app, "assistant_name", "flex")
+        assistant_names = getattr(app, "assistant_names", ["flex"])
         require_name = getattr(app, "require_name", False)
         sleeping = getattr(app, "sleeping", False)
 
     has_prefix = False
-    if assistant_name:
-        if text == assistant_name:
-            return f"Di '{assistant_name} ayuda' para ver comandos."
-        if text.startswith(assistant_name + " "):
-            text = text[len(assistant_name) + 1:].strip()
+    for name in assistant_names:
+        if text == name:
+            return f"Di '{assistant_names[0]} ayuda' para ver comandos."
+        if text.startswith(name + " "):
+            text = text[len(name) + 1:].strip()
             has_prefix = True
+            break
 
     disabled_cmd = registry.match_disabled(text)
     if disabled_cmd:
@@ -338,7 +339,7 @@ def ejecutar_comando(text: str, app=None) -> str:
         if not has_prefix:
             if sleeping:
                 return ""
-            return f"Usa '{assistant_name} {cmd.patterns[0]}' para {cmd.description.lower().replace(' (requiere nombre)', '')}."
+            return f"Usa '{assistant_names[0]} {cmd.patterns[0]}' para {cmd.description.lower().replace(' (requiere nombre)', '')}."
         return cmd.action(app, query)
 
     if sleeping:
@@ -348,7 +349,7 @@ def ejecutar_comando(text: str, app=None) -> str:
         if not has_prefix:
             if sleeping:
                 return ""
-            name = assistant_name or "flex"
+            name = assistant_names[0] if assistant_names else "flex"
             return f"Di '{name} {cmd.patterns[0]}' para {cmd.description.lower()}."
 
     if require_name and not has_prefix:
