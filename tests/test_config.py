@@ -123,3 +123,35 @@ class TestScanModels:
         models = scan_models()
         assert isinstance(models, list)
         assert len(models) >= 1
+
+
+class TestModelNameComparison:
+    def test_relative_and_absolute_resolve_same(self):
+        from src.config import PROJECT_ROOT
+        relative = "vosk-model-small-es-0.42"
+        absolute = os.path.join(PROJECT_ROOT, relative)
+        assert os.path.abspath(relative) == os.path.abspath(absolute)
+
+    def test_os_path_abspath_matches_stored_absolute(self, monkeypatch):
+        from src.config import PROJECT_ROOT
+        stored = "vosk-model-small-es-0.42"
+        scanned = os.path.join(PROJECT_ROOT, stored)
+        monkeypatch.setattr("src.config.os.listdir", lambda _: [stored])
+        monkeypatch.setattr("src.config.os.path.isdir", lambda p: True)
+        models = scan_models()
+        assert len(models) == 1
+        assert os.path.abspath(stored) == os.path.abspath(models[0])
+
+    def test_resolve_model_path_matches_scan(self, monkeypatch):
+        from src.config import resolve_model_path, PROJECT_ROOT
+        model_names = ["vosk-model-small-es-0.42", "vosk-model-es-0.42"]
+        monkeypatch.setattr("src.config.os.listdir", lambda _: model_names)
+        monkeypatch.setattr("src.config.os.path.isdir", lambda p: True)
+        scanned = scan_models()
+        target = "vosk-model-small-es-0.42"
+        resolved = resolve_model_path(target)
+        for sm in scanned:
+            if sm.endswith(target):
+                assert os.path.abspath(resolved) == os.path.abspath(sm)
+                return
+        pytest.fail(f"'{target}' not found in scanned models: {scanned}")

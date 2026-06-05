@@ -7,7 +7,7 @@ import pytest
 
 from src.commands import (
     Command, CommandRegistry, cargar_comandos,
-    _accion_programa, _accion_url,
+    _accion_programa, _accion_url, _accion_abrir_catchall,
     ejecutar_comando,
     _log_failed_command,
 )
@@ -210,3 +210,178 @@ class TestEjecutarComando:
     def test_unrecognized_with_app(self):
         result = ejecutar_comando("xyzzy no existe")
         assert "no reconocido" in result
+
+
+class TestPatternVariants:
+    @pytest.fixture
+    def accent_registry(self):
+        reg = CommandRegistry()
+        reg.add(Command(
+            ["abrir codigo", "abrir código", "abrir visual studio"],
+            "Abre VS Code", lambda app, q: "vscode"
+        ))
+        reg.add(Command(
+            ["abrir lapce", "abrir lapse"],
+            "Abre Lapce", lambda app, q: "lapce"
+        ))
+        return reg
+
+    def test_accent_pattern_matches(self, accent_registry):
+        cmd, _ = accent_registry.match("abrir código")
+        assert cmd is not None
+        assert cmd.description == "Abre VS Code"
+
+    def test_non_accent_also_matches(self, accent_registry):
+        cmd, _ = accent_registry.match("abrir codigo")
+        assert cmd is not None
+        assert cmd.description == "Abre VS Code"
+
+    def test_second_pattern_before_first(self, accent_registry):
+        cmd, _ = accent_registry.match("abrir visual studio")
+        assert cmd is not None
+        assert cmd.description == "Abre VS Code"
+
+    def test_hard_pronunciation_variant(self, accent_registry):
+        cmd, _ = accent_registry.match("abrir lapse")
+        assert cmd is not None
+        assert cmd.description == "Abre Lapce"
+
+    def test_abrir_still_matches_with_accent(self, accent_registry):
+        cmd, _ = accent_registry.match("abrir lapce")
+        assert cmd is not None
+        assert cmd.description == "Abre Lapce"
+
+    def test_abre_not_in_patterns_returns_none(self, accent_registry):
+        result = accent_registry.match("abre lapce")
+        assert result is None
+
+
+class TestEjecutarComandoConApp:
+    @pytest.fixture(autouse=True)
+    def _no_side_effects(self, monkeypatch):
+        monkeypatch.setattr("src.commands._log_failed_command", lambda *a, **kw: None)
+        monkeypatch.setattr("src.commands.subprocess.Popen", lambda *a, **kw: None)
+
+    @pytest.fixture
+    def app_base(self):
+        class FakeApp:
+            assistant_name = "flex"
+            require_name = False
+            sleeping = False
+        return FakeApp()
+
+    def test_with_name_prefix_strips_it(self, app_base):
+        result = ejecutar_comando("flex abrir notepad", app_base)
+        assert "no reconocido" not in result
+
+    def test_without_prefix_when_optional(self, app_base):
+        result = ejecutar_comando("abrir notepad", app_base)
+        assert "no reconocido" not in result
+
+    def test_sleeping_ignores_all(self, app_base):
+        app_base.sleeping = True
+        result = ejecutar_comando("abrir notepad", app_base)
+        assert result == ""
+
+    def test_require_name_without_prefix_returns_empty(self, app_base):
+        app_base.require_name = True
+        result = ejecutar_comando("abrir notepad", app_base)
+        assert result == ""
+
+    def test_require_name_with_prefix_works(self, app_base):
+        app_base.require_name = True
+        result = ejecutar_comando("flex abrir notepad", app_base)
+        assert "no reconocido" not in result
+
+    def test_name_only_returns_help(self, app_base):
+        result = ejecutar_comando("flex", app_base)
+        assert "ayuda" in result
+
+
+class TestAccionCatchall:
+    def test_empty_query_returns_prompt(self):
+        result = _accion_abrir_catchall(None, "")
+        assert "Di que programa" in result
+
+    def test_whitespace_query_returns_prompt(self):
+        result = _accion_abrir_catchall(None, "   ")
+        assert "Di que programa" in result
+
+    def test_not_found_returns_message(self, monkeypatch):
+        monkeypatch.setattr("src.commands.shutil.which", lambda x: None)
+        monkeypatch.setattr("src.commands.subprocess.Popen", lambda *a, **kw: None)
+        result = _accion_abrir_catchall(None, "chromium")
+        assert "No se encontro" in result
+
+    def test_found_launches_and_returns(self, monkeypatch):
+        monkeypatch.setattr("src.commands.shutil.which", lambda x: x)
+        monkeypatch.setattr("src.commands.subprocess.Popen", lambda *a, **kw: None)
+        result = _accion_abrir_catchall(None, "notepad")
+        assert "Abriendo" in result
+
+
+class TestCargarComandosExtra:
+    def test_extra_fields_ignored(self, monkeypatch):
+        import json, tempfile
+        items = [
+            {
+                "patterns": ["test"],
+                "description": "Test",
+                "action": "programa",
+                "program": "notepad",
+                "unknown_field": "should_be_ignored",
+                "another_extra": 42,
+            }
+        ]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json",
+                                          delete=False, encoding="utf-8") as f:
+            json.dump(items, f)
+            path = f.name
+        try:
+            reg = CommandRegistry()
+            cargar_comandos(reg, path)
+            assert len(reg.all()) == 1
+            cmd = reg.all()[0]
+            assert cmd.patterns[0] == "test"
+        finally:
+            os.unlink(path)
+
+    def test_unknown_action_skipped(self, monkeypatch):
+        import json, tempfile
+        items = [
+            {"patterns": ["valid"], "description": "Valid", "action": "programa",
+             "program": "notepad"},
+            {"patterns": ["bad"], "description": "Bad", "action": "no_existe"},
+        ]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json",
+                                          delete=False, encoding="utf-8") as f:
+            json.dump(items, f)
+            path = f.name
+        try:
+            reg = CommandRegistry()
+            cargar_comandos(reg, path)
+            assert len(reg.all()) == 1
+            assert reg.all()[0].patterns[0] == "valid"
+        finally:
+            os.unlink(path)
+
+    def test_shell_action_accepts_optional_confirm(self, monkeypatch):
+        import json, tempfile
+        items = [
+            {
+                "patterns": ["reiniciar"],
+                "description": "Reinicia",
+                "action": "shell",
+                "shell_cmd": "shutdown /r",
+            }
+        ]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json",
+                                          delete=False, encoding="utf-8") as f:
+            json.dump(items, f)
+            path = f.name
+        try:
+            reg = CommandRegistry()
+            cargar_comandos(reg, path)
+            assert len(reg.all()) == 1
+        finally:
+            os.unlink(path)
