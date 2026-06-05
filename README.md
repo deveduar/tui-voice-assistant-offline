@@ -1,4 +1,4 @@
-# Flex — Asistente de Voz Offline
+# Asistente de Voz Offline
 
 Asistente por voz en español, 100% offline (Vosk), con interfaz TUI moderna (Textual) y comandos configurables vía JSON.
 
