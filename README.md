@@ -110,10 +110,6 @@ Los comandos se definen en `commands_config.json`. Cada entrada tiene:
 
 `needs_query: true` indica que el comando espera texto adicional (ej: *"buscar en youtube cómo hacer paella"` → busca el query).
 
-### Variables de entorno
-
-En `program` se pueden usar variables como `%LOCALAPPDATA%` o `$USER`; se expanden automáticamente.
-
 ## Modo escritura (dictado)
 
 Actívalo con *"modo escritura"* o *"modo dictado"*. Todo lo que digas se inyecta en la ventana activa.

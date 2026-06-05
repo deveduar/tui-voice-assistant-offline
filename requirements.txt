@@ -1,3 +1,4 @@
 vosk
 pyaudio
 textual
+pytest

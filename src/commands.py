@@ -95,7 +95,7 @@ def _accion_programa(app, query, program=None, program_args=None, **kwargs):
     if not program:
         return "No se especifico programa."
     full = f"{program} {program_args}" if program_args else program
-    full = os.path.expandvars(full)
+    full = os.path.expandvars(full)  # no usado actualmente, safety net para %VAR% en rutas
     subprocess.Popen(full, shell=True)
     return f"Abriendo {os.path.basename(program)}."
 
