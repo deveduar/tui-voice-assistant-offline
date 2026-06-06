@@ -1,26 +1,2 @@
-2026-06-05 18:35:40,062 writing_mode raw='ahora sí' match=None
-2026-06-05 18:35:40,063 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:35:49,052 writing_mode raw='a mil novecientos noventa y cinco nació david un grande guerrero con liderazgo nobleza' match=None
-2026-06-05 18:35:49,052 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:35:50,851 writing_mode raw='y pasión' match=None
-2026-06-05 18:35:50,851 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:35:58,952 writing_mode raw='luchó contra los grandes guerreros del pueblo egipto' match=None
-2026-06-05 18:35:58,952 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:06,252 writing_mode raw='como lo regla' match=None
-2026-06-05 18:36:06,252 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:08,252 writing_mode raw='puesto juntos claro' match=None
-2026-06-05 18:36:08,252 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:11,352 writing_mode raw='si tarda un poco podría arreglarlo' match=None
-2026-06-05 18:36:11,352 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:14,052 writing_mode raw='pero da igual el día fácil ya' match=None
-2026-06-05 18:36:14,052 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:19,052 writing_mode raw='también deberías corregir después del espacio' match=None
-2026-06-05 18:36:19,052 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:26,452 writing_mode raw='ya pero ejemplo porque luego de que el técnico vaya vaya' match=None
-2026-06-05 18:36:26,452 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:30,152 writing_mode raw='escríbelo escríbelo todo' match=None
-2026-06-05 18:36:30,152 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:34,052 writing_mode raw='ya' match=None
-2026-06-05 18:36:34,052 writing_mode BRANCH=write_text match_cat=None match_pat=None
-2026-06-05 18:36:39,952 writing_mode raw='modo comandos' match=modo comandos
-2026-06-05 18:36:39,952 writing_mode BRANCH=exit pattern=modo comandos
+2026-06-06 17:02:21,109 writing_mode raw='modo comandos' match=modo comandos
+2026-06-06 17:02:21,110 writing_mode BRANCH=exit pattern=modo comandos

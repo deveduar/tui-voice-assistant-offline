@@ -42,7 +42,7 @@ En la primera ejecución:
 | Cómo cierro el asistente | `Q` o voz: *"flex salir"* |
 | Cómo activo el dictado | Voz: *"modo escritura"* |
 | Cómo desactivo el dictado | Voz: *"modo comandos"* |
-| Cómo duermo al asistente | Voz: *"flex duerme"* |
+| Cómo duermo al asistente | Voz: *"flex duerme"* (cualquier nombre de la lista sirve) |
 | Cómo veo/desactivo comandos | `M` o voz: *"configurar comandos"* |
 | Cómo cambio de tema | `Ctrl+P` → escribe "tema" |
 | Cómo cambio de micrófono | `Ctrl+P` → escribe "micro" |
@@ -124,15 +124,18 @@ En `config.json`:
 
 ```json
 {
-  "assistant_name": "flex",
+  "assistant_names": ["flex"],
   "require_name": false
 }
 ```
 
-- `assistant_name` — palabra para anteceder comandos (ej: *"flex abre notepad"*)
-- `require_name` — si es `true`, **todos** los comandos requieren el nombre
+- `assistant_names` — lista de palabras para anteceder comandos (ej: *"flex abre notepad"*, *"talón abre notepad"*)
+- `require_name` — si es `true`, **todos** los comandos requieren algún nombre de la lista
+- El primer nombre de la lista se usa en mensajes de ayuda y display
 
 Los comandos de dormir/despertar siempre requieren el nombre.
+
+> La versión anterior usaba `assistant_name` (string). La migración a `assistant_names` (lista) es automática en el primer arranque.
 
 ## Gestión de comandos
 
@@ -155,7 +158,7 @@ Los comandos que no se reconocen se registran en `failed_commands.jsonl` con tim
 ```json
 {
   "mic_index": 1,
-  "assistant_name": "flex",
+  "assistant_names": ["flex"],
   "require_name": false,
   "theme": "catppuccin-mocha",
   "model_name": "vosk-model-small-es-0.42",
@@ -166,7 +169,7 @@ Los comandos que no se reconocen se registran en `failed_commands.jsonl` con tim
 | Campo | Descripción |
 |-------|-------------|
 | `mic_index` | Índice del micrófono |
-| `assistant_name` | Nombre del asistente (wake word) |
+| `assistant_names` | Lista de nombres del asistente (wake words) |
 | `require_name` | Si es `true`, nombre obligatorio para todo |
 | `theme` | Tema Textual (`catppuccin-mocha`, `dracula`, `gruvbox`, `monokai`, etc.) |
 | `model_name` | Carpeta del modelo Vosk |
